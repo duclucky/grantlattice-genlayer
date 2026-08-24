@@ -41,7 +41,6 @@ interface WriteContractRequest {
   functionName: string;
   args: unknown[];
   value: bigint;
-  account: Address;
 }
 
 export interface GenLayerWriteClient {
@@ -305,7 +304,6 @@ export function createGenLayerAdapter(
       functionName,
       args,
       value: 0n,
-      account: wallet.account,
     });
     if (typeof hash !== "string") throw new Error("Wallet did not return a transaction hash.");
 

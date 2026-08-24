@@ -135,7 +135,6 @@ describe("createGenLayerAdapter", () => {
         "root-nonce",
       ],
       value: 0n,
-      account,
     });
 
     const stages: string[] = [];
