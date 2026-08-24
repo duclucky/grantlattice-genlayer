@@ -10,6 +10,8 @@ import {
 import { useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 
+import { WalletControls } from "../wallet/WalletControls";
+
 const navItems = [
   { to: "/grants", label: "Grants", icon: CirclesThreeIcon },
   { to: "/checks", label: "Access check", icon: ShieldCheckIcon },
@@ -65,9 +67,7 @@ export function AppShell() {
               </NavLink>
             ))}
           </nav>
-          <button className="button button-secondary wallet-trigger" type="button">
-            Connect wallet
-          </button>
+          <WalletControls />
         </div>
       </header>
       <main id="main-content" tabIndex={-1}>

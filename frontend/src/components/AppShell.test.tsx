@@ -21,4 +21,15 @@ describe("AppShell", () => {
     await user.click(trigger);
     expect(trigger).toHaveAttribute("aria-expanded", "false");
   });
+
+  it("opens the deliberate wallet-selection dialog from the product shell", async () => {
+    const user = userEvent.setup();
+    renderApp("/", canonicalTestAdapter);
+
+    await user.click(screen.getByRole("button", { name: "Connect wallet" }));
+
+    expect(
+      await screen.findByRole("dialog", { name: "Choose a wallet" }),
+    ).toBeInTheDocument();
+  });
 });

@@ -130,6 +130,29 @@ code { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
 .page-state { padding: var(--space-xl); text-align: center; }
 .page-state-danger { border-color: #fecaca; background: #fff1f2; color: #881337; }
 
+.dialog-overlay { position: fixed; z-index: 80; inset: 0; background: rgb(15 23 42 / 0.58); }
+.wallet-dialog-content { position: fixed; z-index: 81; top: 50%; left: 50%; width: min(calc(100% - 2rem), 30rem); max-height: min(80vh, 40rem); padding: var(--space-lg); overflow-y: auto; transform: translate(-50%, -50%); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-card); box-shadow: var(--shadow-md); }
+.dialog-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-lg); }
+.dialog-heading h2 { margin-bottom: var(--space-xs); }
+.dialog-heading p { margin: 0; color: var(--color-muted-foreground); }
+.icon-button { width: 2.75rem; min-width: 2.75rem; height: 2.75rem; display: inline-grid; place-items: center; border: 1px solid var(--color-border); border-radius: var(--radius-sm); background: var(--color-card); color: var(--color-foreground); cursor: pointer; }
+.wallet-list { margin-top: var(--space-lg); display: grid; gap: var(--space-sm); }
+.wallet-option { width: 100%; min-height: 3.5rem; padding: var(--space-sm) var(--space-md); display: flex; align-items: center; gap: var(--space-md); border: 1px solid var(--color-border); border-radius: var(--radius-sm); background: var(--color-card); color: var(--color-foreground); text-align: left; cursor: pointer; }
+.wallet-option:hover { border-color: #93c5fd; background: #eff6ff; }
+.wallet-option img { width: 1.5rem; height: 1.5rem; border-radius: 0.35rem; }
+.wallet-option span { display: grid; gap: 0.1rem; }
+.wallet-option small { color: var(--color-muted-foreground); }
+.dialog-empty { margin-top: var(--space-lg); padding: var(--space-lg); display: grid; justify-items: center; text-align: center; border-radius: var(--radius-sm); background: var(--color-muted); }
+.wallet-error { color: var(--color-destructive); }
+.account-menu { z-index: 90; width: min(22rem, calc(100vw - 2rem)); padding: var(--space-sm); border: 1px solid var(--color-border); border-radius: var(--radius-sm); background: var(--color-card); box-shadow: var(--shadow-md); }
+.account-summary { padding: var(--space-sm); display: grid; gap: var(--space-xs); }
+.account-summary code { overflow-wrap: anywhere; font-size: 0.78rem; }
+.account-summary small { color: var(--color-muted-foreground); }
+.menu-separator { height: 1px; margin-block: var(--space-xs); background: var(--color-border); }
+.menu-item { min-height: 2.75rem; padding: var(--space-sm); display: flex; align-items: center; gap: var(--space-sm); border-radius: var(--radius-sm); outline: none; cursor: pointer; }
+.menu-item[data-highlighted] { background: var(--color-muted); }
+.menu-item-danger { color: var(--color-destructive); }
+
 :where(a, button, input, textarea, summary):focus-visible { outline: 3px solid var(--color-ring); outline-offset: 3px; }
 
 @media (max-width: 64rem) {

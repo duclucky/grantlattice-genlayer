@@ -10,6 +10,7 @@ import { ContractAdapterProvider } from "./adapters/ContractAdapterProvider";
 import { unconfiguredContract } from "./adapters/unconfiguredContract";
 import "./styles/global.css";
 import { TransactionProvider } from "./transactions/TransactionProvider";
+import { WalletProvider } from "./wallet/WalletProvider";
 
 const rootElement = document.getElementById("root");
 
@@ -20,11 +21,13 @@ if (!rootElement) {
 createRoot(rootElement).render(
   <StrictMode>
     <BrowserRouter>
-      <ContractAdapterProvider adapter={unconfiguredContract}>
-        <TransactionProvider>
-          <App />
-        </TransactionProvider>
-      </ContractAdapterProvider>
+      <WalletProvider>
+        <ContractAdapterProvider adapter={unconfiguredContract}>
+          <TransactionProvider>
+            <App />
+          </TransactionProvider>
+        </ContractAdapterProvider>
+      </WalletProvider>
     </BrowserRouter>
   </StrictMode>,
 );

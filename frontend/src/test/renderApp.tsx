@@ -5,15 +5,18 @@ import { App } from "../App";
 import { ContractAdapterProvider } from "../adapters/ContractAdapterProvider";
 import type { GrantLatticeAdapter } from "../adapters/contract";
 import { TransactionProvider } from "../transactions/TransactionProvider";
+import { WalletProvider } from "../wallet/WalletProvider";
 
 export function renderApp(route: string, adapter: GrantLatticeAdapter) {
   return render(
     <MemoryRouter initialEntries={[route]}>
-      <ContractAdapterProvider adapter={adapter}>
-        <TransactionProvider>
-          <App />
-        </TransactionProvider>
-      </ContractAdapterProvider>
+      <WalletProvider>
+        <ContractAdapterProvider adapter={adapter}>
+          <TransactionProvider>
+            <App />
+          </TransactionProvider>
+        </ContractAdapterProvider>
+      </WalletProvider>
     </MemoryRouter>,
   );
 }
