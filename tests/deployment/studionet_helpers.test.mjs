@@ -2,7 +2,9 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  delegateFundingDecision,
   deploymentDecision,
+  isExpectedRejectedReceipt,
   isSuccessfulFinalizedReceipt,
   mergeEnvironment,
   safeReceiptProjection,
@@ -47,6 +49,26 @@ test("raw and normalized finalized receipts require successful execution", () =>
 });
 
 
+test("expected objective rejection requires a finalized failed execution", () => {
+  const rejected = {
+    status: 7,
+    result: 6,
+    consensus_data: { leader_receipt: [{ execution_result: "ERROR" }] },
+  };
+  assert.equal(isExpectedRejectedReceipt(rejected), true);
+  assert.equal(isExpectedRejectedReceipt({ ...rejected, status: 5 }), false);
+  assert.equal(isExpectedRejectedReceipt({ ...rejected, consensus_data: { leader_receipt: [{ execution_result: "SUCCESS" }] } }), false);
+});
+
+
+test("delegate preparation funds exactly once and resumes at one GEN", () => {
+  assert.equal(delegateFundingDecision(0n), "FUND_1_GEN");
+  assert.equal(delegateFundingDecision(10n ** 18n - 1n), "FUND_1_GEN");
+  assert.equal(delegateFundingDecision(10n ** 18n), "READY");
+  assert.equal(delegateFundingDecision(2n * 10n ** 18n), "READY");
+});
+
+
 test("deployment identity resumes only the exact successful active revision", () => {
   const current = {
     network: "studionet",
@@ -81,11 +103,17 @@ test("project environment wins while parent only fills missing variables", () =>
 
 test("lifecycle selection resumes from canonical state without replaying writes", () => {
   assert.equal(selectNextLifecycleAction(undefined), "CREATE_ROOT");
-  assert.equal(selectNextLifecycleAction({ rootStatus: "ACTIVE", childStatus: null }), "PROPOSE_CHILD");
-  assert.equal(selectNextLifecycleAction({ rootStatus: "ACTIVE", childStatus: "PROPOSED" }), "REVIEW_CHILD");
-  assert.equal(selectNextLifecycleAction({ rootStatus: "ACTIVE", childStatus: "RETRYABLE" }), "REVIEW_CHILD");
-  assert.equal(selectNextLifecycleAction({ rootStatus: "ACTIVE", childStatus: "ACTIVE", access: null }), "CHECK_ACCESS");
-  assert.equal(selectNextLifecycleAction({ rootStatus: "ACTIVE", childStatus: "ACTIVE", access: "ALLOWED" }), "REVOKE_ROOT");
-  assert.equal(selectNextLifecycleAction({ rootStatus: "REVOKED", childStatus: "ACTIVE", access: "ANCESTOR_INACTIVE" }), "COMPLETE");
+  assert.equal(selectNextLifecycleAction({ rootStatus: null, objectiveExpansionProved: false }), "CREATE_ROOT");
+  assert.equal(selectNextLifecycleAction({ rootStatus: "ACTIVE", objectiveExpansionProved: false }), "PROVE_OBJECTIVE_REJECTION");
+  assert.equal(selectNextLifecycleAction({ rootStatus: "ACTIVE", objectiveExpansionProved: true, validStatus: null }), "PROPOSE_VALID");
+  assert.equal(selectNextLifecycleAction({ rootStatus: "ACTIVE", objectiveExpansionProved: true, validStatus: "PROPOSED" }), "REVIEW_VALID");
+  assert.equal(selectNextLifecycleAction({ rootStatus: "ACTIVE", objectiveExpansionProved: true, validStatus: "ACTIVE", expansionStatus: null }), "PROPOSE_EXPANSION");
+  assert.equal(selectNextLifecycleAction({ rootStatus: "ACTIVE", objectiveExpansionProved: true, validStatus: "ACTIVE", expansionStatus: "PROPOSED" }), "REVIEW_EXPANSION");
+  assert.equal(selectNextLifecycleAction({ rootStatus: "ACTIVE", objectiveExpansionProved: true, validStatus: "ACTIVE", expansionStatus: "DENIED", ambiguousStatus: null }), "PROPOSE_AMBIGUOUS");
+  assert.equal(selectNextLifecycleAction({ rootStatus: "ACTIVE", objectiveExpansionProved: true, validStatus: "ACTIVE", expansionStatus: "DENIED", ambiguousStatus: "PROPOSED" }), "REVIEW_AMBIGUOUS");
+  assert.equal(selectNextLifecycleAction({ rootStatus: "ACTIVE", objectiveExpansionProved: true, validStatus: "ACTIVE", expansionStatus: "DENIED", ambiguousStatus: "RETRYABLE", accessBefore: null }), "CHECK_ACCESS_BEFORE");
+  assert.equal(selectNextLifecycleAction({ rootStatus: "ACTIVE", objectiveExpansionProved: true, validStatus: "ACTIVE", expansionStatus: "DENIED", ambiguousStatus: "RETRYABLE", accessBefore: "ALLOWED" }), "REVOKE_ROOT");
+  assert.equal(selectNextLifecycleAction({ rootStatus: "REVOKED", objectiveExpansionProved: true, validStatus: "ACTIVE", expansionStatus: "DENIED", ambiguousStatus: "RETRYABLE", accessBefore: "ALLOWED", accessAfter: null }), "CHECK_ACCESS_AFTER");
+  assert.equal(selectNextLifecycleAction({ rootStatus: "REVOKED", objectiveExpansionProved: true, validStatus: "ACTIVE", expansionStatus: "DENIED", ambiguousStatus: "RETRYABLE", accessBefore: "ALLOWED", accessAfter: "ANCESTOR_INACTIVE" }), "COMPLETE");
   assert.equal(selectNextLifecycleAction({ rootStatus: "REVOKED", access: "ALLOWED" }), "STOP_INCONSISTENT");
 });
