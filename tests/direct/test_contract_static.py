@@ -63,3 +63,10 @@ def test_v1_has_no_payable_or_value_transfer_path():
     assert "@gl.public.write.payable" not in text
     assert "emit_transfer" not in text
     assert "10**18" not in text
+
+
+def test_semantic_review_uses_locked_safe_nondeterminism_api():
+    text = source()
+    assert "gl.vm.run_nondet(" in text
+    assert "run_nondet_unsafe" not in text
+    assert "isinstance(leader_result, gl.vm.Return)" in text
