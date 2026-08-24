@@ -16,7 +16,7 @@ describe("ensureStudionet", () => {
   });
 
   it("adds current Studionet only when the wallet reports unknown chain", async () => {
-    const unknownChain = Object.assign(new Error("Unknown chain"), { code: 4902 });
+    const unknownChain = { code: 4902, message: "Unknown chain" };
     const request = vi
       .fn()
       .mockRejectedValueOnce(unknownChain)

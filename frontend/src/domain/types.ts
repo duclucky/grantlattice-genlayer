@@ -91,5 +91,5 @@ export interface ProposeChildInput {
 
 export interface WriteRequest {
   hash: string;
-  wait(): Promise<TransactionStage>;
+  wait(onStage?: (stage: TransactionStage) => void): Promise<TransactionStage>;
 }

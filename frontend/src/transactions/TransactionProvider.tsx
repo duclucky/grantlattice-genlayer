@@ -49,7 +49,13 @@ export function TransactionProvider({ children }: PropsWithChildren) {
 
       let stage: TransactionStage;
       try {
-        stage = await request.wait();
+        stage = await request.wait((nextStage) => {
+          setActivities((current) =>
+            current.map((activity) =>
+              activity.id === id ? { ...activity, stage: nextStage } : activity,
+            ),
+          );
+        });
       } catch {
         stage = "FAILED";
       }

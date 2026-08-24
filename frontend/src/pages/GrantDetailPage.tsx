@@ -1,20 +1,27 @@
 import { ArrowLeftIcon, ShieldCheckIcon } from "@phosphor-icons/react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import { useContractAdapter } from "../adapters/ContractAdapterProvider";
 import { PageState } from "../components/PageState";
 import { StatusBadge } from "../components/StatusBadge";
 import type { GrantRecord, ReviewRecord } from "../domain/types";
+import { createNonce, errorMessage } from "../domain/input";
+import { useTransactions } from "../transactions/TransactionProvider";
+import { useWallet } from "../wallet/WalletProvider";
 
 export function GrantDetailPage() {
   const { grantId = "" } = useParams();
   const adapter = useContractAdapter();
+  const wallet = useWallet();
+  const transactions = useTransactions();
   const [grant, setGrant] = useState<GrantRecord | null>(null);
   const [review, setReview] = useState<ReviewRecord | null>(null);
   const [state, setState] = useState<"loading" | "ready" | "error">("loading");
+  const [writeError, setWriteError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
 
-  useEffect(() => {
+  const reload = useCallback(() => {
     let live = true;
     void Promise.all([adapter.getGrant(grantId), adapter.getReview(grantId)])
       .then(([nextGrant, nextReview]) => {
@@ -30,6 +37,25 @@ export function GrantDetailPage() {
     return () => { live = false; };
   }, [adapter, grantId]);
 
+  useEffect(() => reload(), [reload]);
+
+  async function runWrite(
+    label: string,
+    createRequest: () => ReturnType<typeof adapter.reviewChild>,
+  ) {
+    setBusy(true);
+    setWriteError(null);
+    try {
+      const result = await transactions.run(label, grantId, createRequest);
+      if (result === "FINALIZED") reload();
+      else setWriteError(`Transaction stopped at ${result}. Canonical authority was not assumed.`);
+    } catch (caught) {
+      setWriteError(errorMessage(caught));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   if (state === "loading") {
     return <div className="page"><PageState headingLevel={1} title="Loading grant">Reading canonical lineage and authority.</PageState></div>;
   }
@@ -39,6 +65,20 @@ export function GrantDetailPage() {
   if (!grant) {
     return <div className="page"><PageState headingLevel={1} title="Grant not found">Check the exact grant ID or return to the workspace.</PageState></div>;
   }
+
+  const account = wallet.account?.toLowerCase();
+  const walletReady = Boolean(account) && wallet.networkState === "ready";
+  const canDelegate = walletReady
+    && grant.status === "ACTIVE"
+    && grant.effective
+    && grant.depth < grant.maxDepth
+    && account === grant.grantee.toLowerCase();
+  const canReview = walletReady
+    && (grant.status === "PROPOSED" || grant.status === "RETRYABLE")
+    && account === grant.grantor.toLowerCase();
+  const canRevoke = walletReady
+    && grant.status !== "REVOKED"
+    && (account === grant.grantor.toLowerCase() || account === grant.rootPrincipal.toLowerCase());
 
   return (
     <div className="page">
@@ -102,10 +142,36 @@ export function GrantDetailPage() {
       {review ? <section className="content-card"><h2>Latest review</h2><p>{review.reason}</p></section> : null}
 
       <section className="action-bar" aria-label="Grant actions">
-        <Link className="button button-primary" to={`/grants/${grant.grantId}/delegate`}>Delegate a narrower grant</Link>
+        {canDelegate ? <Link className="button button-primary" to={`/grants/${grant.grantId}/delegate`}>Delegate a narrower grant</Link> : null}
+        {canReview ? (
+          <button
+            className="button button-primary"
+            disabled={busy}
+            onClick={() => void runWrite("Review child grant", () => adapter.reviewChild(grant.grantId))}
+            type="button"
+          >
+            Request semantic review
+          </button>
+        ) : null}
         <Link className="button button-secondary" to={`/checks?grant=${grant.grantId}`}>Check access</Link>
-        <button className="button button-danger" type="button" disabled>Connect wallet to revoke</button>
+        {canRevoke ? (
+          <button
+            className="button button-danger"
+            disabled={busy}
+            onClick={() => void runWrite(
+              "Revoke grant",
+              () => adapter.revokeGrant(grant.grantId, createNonce("revoke")),
+            )}
+            type="button"
+          >
+            Revoke grant
+          </button>
+        ) : null}
+        {!wallet.account && grant.status !== "REVOKED" ? (
+          <button className="button button-danger" type="button" disabled>Connect wallet for authorized actions</button>
+        ) : null}
       </section>
+      {writeError ? <p className="wallet-error" role="alert">{writeError}</p> : null}
     </div>
   );
 }

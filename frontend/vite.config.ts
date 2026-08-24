@@ -3,6 +3,15 @@ import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   plugins: [react()],
+  server: {
+    proxy: {
+      "/api/genlayer": {
+        target: "https://studio.genlayer.com",
+        changeOrigin: true,
+        rewrite: () => "/api",
+      },
+    },
+  },
   test: {
     environment: "jsdom",
     globals: true,

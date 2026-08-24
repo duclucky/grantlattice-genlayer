@@ -6,8 +6,7 @@ import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 
 import { App } from "./App";
-import { ContractAdapterProvider } from "./adapters/ContractAdapterProvider";
-import { unconfiguredContract } from "./adapters/unconfiguredContract";
+import { RuntimeContractAdapterProvider } from "./adapters/ContractAdapterProvider";
 import "./styles/global.css";
 import { TransactionProvider } from "./transactions/TransactionProvider";
 import { WalletProvider } from "./wallet/WalletProvider";
@@ -22,11 +21,11 @@ createRoot(rootElement).render(
   <StrictMode>
     <BrowserRouter>
       <WalletProvider>
-        <ContractAdapterProvider adapter={unconfiguredContract}>
+        <RuntimeContractAdapterProvider>
           <TransactionProvider>
             <App />
           </TransactionProvider>
-        </ContractAdapterProvider>
+        </RuntimeContractAdapterProvider>
       </WalletProvider>
     </BrowserRouter>
   </StrictMode>,

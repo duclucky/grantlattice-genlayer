@@ -14,7 +14,12 @@ export async function ensureStudionet(provider: Eip1193Provider): Promise<void> 
       params: [{ chainId: STUDIONET.chainId }],
     });
   } catch (error) {
-    if (!(error instanceof Error) || !("code" in error) || error.code !== 4902) {
+    if (
+      typeof error !== "object"
+      || error === null
+      || !("code" in error)
+      || error.code !== 4902
+    ) {
       throw error;
     }
     await provider.request({

@@ -1,7 +1,89 @@
-import { Link, useParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
+
+import { useContractAdapter } from "../adapters/ContractAdapterProvider";
+import { PageState } from "../components/PageState";
+import {
+  assertAsciiClauseText,
+  createNonce,
+  epochSeconds,
+  errorMessage,
+  parseAddress,
+  parseCsvInput,
+  parseGrantId,
+} from "../domain/input";
+import type { GrantRecord, TransactionStage } from "../domain/types";
+import { useTransactions } from "../transactions/TransactionProvider";
+import { useWallet } from "../wallet/WalletProvider";
 
 export function DelegatePage() {
   const { grantId = "" } = useParams();
+  const adapter = useContractAdapter();
+  const wallet = useWallet();
+  const transactions = useTransactions();
+  const navigate = useNavigate();
+  const [parent, setParent] = useState<GrantRecord | null>(null);
+  const [readState, setReadState] = useState<"loading" | "ready" | "error">("loading");
+  const [stage, setStage] = useState<TransactionStage | "IDLE">("IDLE");
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let live = true;
+    void adapter.getGrant(grantId).then((grant) => {
+      if (live) {
+        setParent(grant);
+        setReadState("ready");
+      }
+    }).catch(() => {
+      if (live) setReadState("error");
+    });
+    return () => { live = false; };
+  }, [adapter, grantId]);
+
+  const connectedGrantor = Boolean(
+    parent
+    && parent.status === "ACTIVE"
+    && parent.effective
+    && wallet.account?.toLowerCase() === parent.grantee.toLowerCase()
+    && wallet.networkState === "ready",
+  );
+  const busy = stage === "SUBMITTED" || stage === "ACCEPTED";
+
+  async function submit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError(null);
+    const data = new FormData(event.currentTarget);
+    try {
+      const childId = parseGrantId(data.get("childId"));
+      setStage("SUBMITTED");
+      const result = await transactions.run("Propose child grant", childId, () => adapter.proposeChild({
+        parentId: grantId,
+        childId,
+        childGrantee: parseAddress(data.get("childGrantee")),
+        capabilities: parseCsvInput(data.get("capabilities")),
+        resources: parseCsvInput(data.get("resources")),
+        expiresAt: epochSeconds(data.get("expiresAt")),
+        clauses: [
+          { id: "no-marketing", kind: "PROHIBITION", text: assertAsciiClauseText(data.get("prohibition")) },
+          { id: "purpose", kind: "RESTRICTION", text: assertAsciiClauseText(data.get("purpose")) },
+        ],
+        nonce: createNonce("propose-child"),
+      }));
+      setStage(result);
+      if (result === "FINALIZED") navigate(`/grants/${childId}`);
+      else setError(`Transaction stopped at ${result}. The child remains non-authorizing.`);
+    } catch (caught) {
+      setStage("FAILED");
+      setError(errorMessage(caught));
+    }
+  }
+
+  if (readState === "loading") {
+    return <div className="page"><PageState headingLevel={1} title="Loading parent authority">Reading canonical parent state.</PageState></div>;
+  }
+  if (readState === "error" || !parent) {
+    return <div className="page"><PageState headingLevel={1} title="Parent authority unavailable" tone="danger">Delegation remains disabled.</PageState></div>;
+  }
 
   return (
     <div className="page form-page">
@@ -14,7 +96,7 @@ export function DelegatePage() {
         Parent authority is read from canonical state before this form becomes
         writable. Expired, revoked, or unavailable parents fail closed.
       </aside>
-      <form className="product-form">
+      <form className="product-form" onSubmit={(event) => void submit(event)}>
         <fieldset>
           <legend>Child identity</legend>
           <label>Child grant ID<input name="childId" required /></label>
@@ -32,9 +114,16 @@ export function DelegatePage() {
           <label>Prohibited use<textarea name="prohibition" rows={4} required /></label>
         </fieldset>
         <div className="form-actions">
-          <button className="button button-primary" type="submit" disabled>Connect wallet to delegate</button>
+          <button className="button button-primary" type="submit" disabled={!connectedGrantor || busy}>
+            {!wallet.account
+              ? "Connect wallet to delegate"
+              : !connectedGrantor
+                ? "Current wallet cannot delegate"
+                : busy ? stage : "Propose child grant"}
+          </button>
           <Link className="button button-quiet" to={`/grants/${grantId}`}>Cancel</Link>
         </div>
+        {error ? <p className="wallet-error" role="alert">{error}</p> : null}
         <p className="form-note">This non-payable action sends 0 GEN.</p>
       </form>
     </div>

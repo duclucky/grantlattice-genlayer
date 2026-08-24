@@ -75,4 +75,31 @@ describe("TransactionProvider", () => {
     await user.click(screen.getByRole("button", { name: "Start" }));
     expect(await screen.findByText("FAILED")).toBeInTheDocument();
   });
+
+  it("surfaces accepted before finalized when the real request reports both", async () => {
+    const user = userEvent.setup();
+    const accepted = deferred<void>();
+    const finalized = deferred<void>();
+    const request: WriteRequest = {
+      hash: "0xaccepted-public-hash",
+      async wait(onStage) {
+        await accepted.promise;
+        onStage?.("ACCEPTED");
+        await finalized.promise;
+        onStage?.("FINALIZED");
+        return "FINALIZED";
+      },
+    };
+
+    render(
+      <TransactionProvider>
+        <TransactionProbe request={request} />
+      </TransactionProvider>,
+    );
+    await user.click(screen.getByRole("button", { name: "Start" }));
+    accepted.resolve();
+    expect(await screen.findByText("ACCEPTED")).toBeInTheDocument();
+    finalized.resolve();
+    expect(await screen.findByText("FINALIZED")).toBeInTheDocument();
+  });
 });
