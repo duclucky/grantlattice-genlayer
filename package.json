@@ -8,14 +8,21 @@
     "frontend"
   ],
   "scripts": {
+    "check": "npm run check:contract && npm run check:tests && npm run check:deployment && npm run check:frontend",
+    "check:contract": "set PYTHONUTF8=1&& .venv\\Scripts\\genvm-lint.exe check contracts/grant_lattice.py",
+    "check:tests": ".venv\\Scripts\\python.exe -m pytest tests -q",
+    "check:deployment": "node --test tests/deployment/*.test.mjs",
+    "check:frontend": "npm --workspace frontend test && npm --workspace frontend run typecheck && npm --workspace frontend run build",
     "lint:contracts": ".venv\\Scripts\\genvm-lint.exe check contracts/grant_lattice.py",
     "test:direct": ".venv\\Scripts\\python.exe -m pytest tests/direct -q",
     "test:frontend": "npm --workspace frontend test",
     "typecheck": "npm --workspace frontend run typecheck",
     "build": "npm --workspace frontend run build",
-    "check": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/check.ps1"
+    "studionet:inspect": "node scripts/studionet.mjs inspect",
+    "studionet:deploy": "node scripts/studionet.mjs deploy",
+    "studionet:lifecycle": "node scripts/studionet.mjs lifecycle"
   },
-  "devDependencies": {
+  "dependencies": {
     "genlayer-js": "1.1.8"
   }
 }

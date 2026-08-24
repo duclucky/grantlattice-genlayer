@@ -70,3 +70,23 @@ def test_semantic_review_uses_locked_safe_nondeterminism_api():
     assert "gl.vm.run_nondet(" in text
     assert "run_nondet_unsafe" not in text
     assert "isinstance(leader_result, gl.vm.Return)" in text
+
+
+def test_all_four_writes_are_public_and_none_is_payable():
+    tree = ast.parse(source())
+    contract = next(
+        node for node in tree.body if isinstance(node, ast.ClassDef) and node.name == "GrantLattice"
+    )
+    expected = {
+        "create_root_grant",
+        "propose_child_grant",
+        "review_child_grant",
+        "revoke_grant",
+    }
+    observed = {}
+    for method in contract.body:
+        if isinstance(method, ast.FunctionDef) and method.name in expected:
+            observed[method.name] = {ast.unparse(item) for item in method.decorator_list}
+    assert set(observed) == expected
+    for decorators in observed.values():
+        assert decorators == {"gl.public.write"}

@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import json
 
+import pytest
+
 from tests.direct.conftest import NOW, clauses, create_root, set_time
 from tests.direct.test_child_grants import propose_child
 
@@ -305,3 +307,59 @@ def test_prompt_injection_text_does_not_choose_consequence(
     contract.review_child_grant("child-injection")
     assert contract.get_grant("child-injection").status == "DENIED"
     assert contract.get_review("child-injection").reason_code == "EXPANSION_DETECTED"
+
+
+@pytest.mark.parametrize(
+    ("case_id", "classes", "expected"),
+    [
+        ("P1", ("NARROWER_OR_EQUAL", "NARROWER_OR_EQUAL"), "ACTIVE"),
+        ("P2", ("NARROWER_OR_EQUAL", "NARROWER_OR_EQUAL"), "ACTIVE"),
+        ("P3", ("NARROWER_OR_EQUAL", "NARROWER_OR_EQUAL"), "ACTIVE"),
+        ("P4", ("NARROWER_OR_EQUAL", "NARROWER_OR_EQUAL"), "ACTIVE"),
+        ("N1", ("EXPANDS_AUTHORITY", "NARROWER_OR_EQUAL"), "DENIED"),
+        ("N2", ("NARROWER_OR_EQUAL", "EXPANDS_AUTHORITY"), "DENIED"),
+        ("N3", ("EXPANDS_AUTHORITY", "EXPANDS_AUTHORITY"), "DENIED"),
+        ("N4", ("OBJECTIVE_REJECT", "OBJECTIVE_REJECT"), "ABSENT"),
+        ("B1", ("AMBIGUOUS", "NARROWER_OR_EQUAL"), "RETRYABLE"),
+        ("B2", ("NARROWER_OR_EQUAL", "AMBIGUOUS"), "RETRYABLE"),
+        ("A1", ("EXPANDS_AUTHORITY", "AMBIGUOUS"), "DENIED"),
+        ("A2", ("INVALID", "NARROWER_OR_EQUAL"), "RETRYABLE"),
+    ],
+)
+def test_twelve_case_semantic_attenuation_corpus(
+    contract,
+    direct_vm,
+    direct_alice,
+    direct_bob,
+    direct_charlie,
+    case_id,
+    classes,
+    expected,
+):
+    create_root(contract, direct_vm, direct_alice, direct_bob)
+    if case_id == "N4":
+        with direct_vm.expect_revert("capabilities exceed parent"):
+            propose_child(
+                contract,
+                direct_vm,
+                direct_bob,
+                direct_charlie,
+                capabilities="READ,WRITE",
+            )
+        with direct_vm.expect_revert("unknown grant"):
+            contract.get_grant("child-1")
+        return
+
+    propose_child(contract, direct_vm, direct_bob, direct_charlie)
+    install_review(
+        direct_vm,
+        review_output(
+            {
+                "no-marketing": classes[0],
+                "purpose": classes[1],
+            }
+        ),
+    )
+    direct_vm.sender = direct_bob
+    contract.review_child_grant("child-1")
+    assert contract.get_grant("child-1").status == expected, case_id
