@@ -47,4 +47,14 @@ describe("ContractAdapterProvider", () => {
       VITE_GENLAYER_NETWORK: "studionet",
     })).toBeNull();
   });
+
+  it("accepts the deployment contract variable required by the production host", () => {
+    expect(readGenLayerAdapterConfig({
+      VITE_CONTRACT_ADDRESS: "0x8888888888888888888888888888888888888888",
+    })).toEqual({
+      contractAddress: "0x8888888888888888888888888888888888888888",
+      icRpcPath: "/api/genlayer",
+      network: "studionet",
+    });
+  });
 });

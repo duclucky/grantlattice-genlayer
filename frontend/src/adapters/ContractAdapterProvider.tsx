@@ -38,9 +38,10 @@ export function useContractAdapter(): GrantLatticeAdapter {
 export function readGenLayerAdapterConfig(
   environment: Record<string, string | boolean | undefined>,
 ): GenLayerAdapterConfig | null {
-  const contractAddress = environment.VITE_GENLAYER_CONTRACT_ADDRESS;
-  const icRpcPath = environment.VITE_GENLAYER_IC_RPC_PATH;
-  const network = environment.VITE_GENLAYER_NETWORK;
+  const contractAddress = environment.VITE_GENLAYER_CONTRACT_ADDRESS
+    ?? environment.VITE_CONTRACT_ADDRESS;
+  const icRpcPath = environment.VITE_GENLAYER_IC_RPC_PATH ?? "/api/genlayer";
+  const network = environment.VITE_GENLAYER_NETWORK ?? "studionet";
   if (
     typeof contractAddress !== "string"
     || !/^0x[a-fA-F0-9]{40}$/u.test(contractAddress)

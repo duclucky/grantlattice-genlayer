@@ -126,8 +126,26 @@ Observed result:
 GenVM lint: PASS (3 checks), GrantLattice, 9 methods (5 view, 4 write)
 Python/direct/static/parser tests: 63 passed
 Deployment helper tests: 7 passed
-Frontend: 19 files passed, 59 tests passed
+Frontend: 20 files passed, 63 tests passed
 TypeScript: exit code 0
 Production build: 5104 modules transformed, built in 521ms
 Overall exit code: 0
 ```
+
+## Production transport hardening
+
+A TDD checkpoint caught that the Vite development proxy does not exist after a
+static production build. The first focused run failed because
+`frontend/api/genlayer.mjs` did not exist. The green implementation adds a
+same-origin Vercel function that forwards only the JSON request body to the
+locked Studionet endpoint, rejects non-POST requests, and returns a bounded 502
+error when the upstream is unavailable. Vercel filesystem-first routing keeps
+that function reachable while falling back to `index.html` for React routes.
+
+Focused command:
+
+```powershell
+npm --prefix frontend test -- api/genlayer.test.mjs
+```
+
+Observed result: `1 passed` file, `3 passed` tests, exit code `0`.
