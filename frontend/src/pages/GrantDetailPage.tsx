@@ -5,7 +5,7 @@ import { Link, useParams } from "react-router-dom";
 import { useContractAdapter } from "../adapters/ContractAdapterProvider";
 import { PageState } from "../components/PageState";
 import { StatusBadge } from "../components/StatusBadge";
-import type { GrantRecord, ReviewRecord } from "../domain/types";
+import type { Address, GrantRecord, ReviewRecord } from "../domain/types";
 import { createNonce, errorMessage } from "../domain/input";
 import { useTransactions } from "../transactions/TransactionProvider";
 import { useWallet } from "../wallet/WalletProvider";
@@ -14,6 +14,7 @@ export function GrantDetailPage() {
   const { grantId = "" } = useParams();
   const adapter = useContractAdapter();
   const wallet = useWallet();
+  const connectedAccount = wallet.account as Address | null;
   const transactions = useTransactions();
   const [grant, setGrant] = useState<GrantRecord | null>(null);
   const [review, setReview] = useState<ReviewRecord | null>(null);
@@ -23,8 +24,16 @@ export function GrantDetailPage() {
 
   const reload = useCallback(() => {
     let live = true;
-    void adapter.getGrant(grantId)
-      .then(async (nextGrant) => {
+    if (!connectedAccount) {
+      setGrant(null);
+      setReview(null);
+      setState("ready");
+      return () => { live = false; };
+    }
+    setState("loading");
+    void adapter.listGrants(connectedAccount)
+      .then(async (availableGrants) => {
+        const nextGrant = availableGrants.find((item) => item.grantId === grantId) ?? null;
         const reviewExists = nextGrant !== null
           && nextGrant.depth > 0
           && nextGrant.status !== "PROPOSED";
@@ -39,7 +48,7 @@ export function GrantDetailPage() {
         if (live) setState("error");
       });
     return () => { live = false; };
-  }, [adapter, grantId]);
+  }, [adapter, connectedAccount, grantId]);
 
   useEffect(() => reload(), [reload]);
 
@@ -60,6 +69,15 @@ export function GrantDetailPage() {
     }
   }
 
+  if (!connectedAccount) {
+    return (
+      <div className="page">
+        <PageState headingLevel={1} title="Connect wallet to view this grant">
+          Grant details stay hidden until you choose a wallet.
+        </PageState>
+      </div>
+    );
+  }
   if (state === "loading") {
     return <div className="page"><PageState headingLevel={1} title="Loading grant">Reading canonical lineage and authority.</PageState></div>;
   }
@@ -67,10 +85,10 @@ export function GrantDetailPage() {
     return <div className="page"><PageState headingLevel={1} title="Authority could not be verified" tone="danger">The canonical read failed. Access remains denied.</PageState></div>;
   }
   if (!grant) {
-    return <div className="page"><PageState headingLevel={1} title="Grant not found">Check the exact grant ID or return to the workspace.</PageState></div>;
+    return <div className="page"><PageState headingLevel={1} title="Grant not found for this wallet">Check the grant ID or switch to a wallet with authority on this grant.</PageState></div>;
   }
 
-  const account = wallet.account?.toLowerCase();
+  const account = connectedAccount.toLowerCase();
   const walletReady = Boolean(account) && wallet.networkState === "ready";
   const canDelegate = walletReady
     && grant.status === "ACTIVE"

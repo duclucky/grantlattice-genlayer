@@ -12,7 +12,7 @@ import {
   parseCsvInput,
   parseGrantId,
 } from "../domain/input";
-import type { GrantRecord, TransactionStage } from "../domain/types";
+import type { Address, GrantRecord, TransactionStage } from "../domain/types";
 import { useTransactions } from "../transactions/TransactionProvider";
 import { useWallet } from "../wallet/WalletProvider";
 
@@ -20,6 +20,7 @@ export function DelegatePage() {
   const { grantId = "" } = useParams();
   const adapter = useContractAdapter();
   const wallet = useWallet();
+  const connectedAccount = wallet.account as Address | null;
   const transactions = useTransactions();
   const navigate = useNavigate();
   const [parent, setParent] = useState<GrantRecord | null>(null);
@@ -29,16 +30,22 @@ export function DelegatePage() {
 
   useEffect(() => {
     let live = true;
-    void adapter.getGrant(grantId).then((grant) => {
+    if (!connectedAccount) {
+      setParent(null);
+      setReadState("ready");
+      return () => { live = false; };
+    }
+    setReadState("loading");
+    void adapter.listGrants(connectedAccount).then((grants) => {
       if (live) {
-        setParent(grant);
+        setParent(grants.find((grant) => grant.grantId === grantId) ?? null);
         setReadState("ready");
       }
     }).catch(() => {
       if (live) setReadState("error");
     });
     return () => { live = false; };
-  }, [adapter, grantId]);
+  }, [adapter, connectedAccount, grantId]);
 
   const connectedGrantor = Boolean(
     parent
@@ -78,11 +85,14 @@ export function DelegatePage() {
     }
   }
 
+  if (!connectedAccount) {
+    return <div className="page"><PageState headingLevel={1} title="Connect wallet to delegate">Parent authority stays hidden until you choose a wallet.</PageState></div>;
+  }
   if (readState === "loading") {
     return <div className="page"><PageState headingLevel={1} title="Loading parent authority">Reading canonical parent state.</PageState></div>;
   }
   if (readState === "error" || !parent) {
-    return <div className="page"><PageState headingLevel={1} title="Parent authority unavailable" tone="danger">Delegation remains disabled.</PageState></div>;
+    return <div className="page"><PageState headingLevel={1} title="Parent authority unavailable for this wallet" tone="danger">Delegation remains disabled.</PageState></div>;
   }
 
   return (

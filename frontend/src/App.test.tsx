@@ -5,28 +5,28 @@ import { unconfiguredContract } from "./adapters/unconfiguredContract";
 import { renderApp } from "./test/renderApp";
 
 describe("App bootstrap", () => {
-  it("describes unavailable canonical state without pretending success", async () => {
+  it("does not read or display grant history before wallet connection", async () => {
     renderApp("/grants", unconfiguredContract);
 
     expect(
       await screen.findByRole("heading", {
-        name: "Authority could not be verified",
+        name: "Connect wallet to view your grants",
       }),
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        "The canonical read is unavailable. No grant is treated as active.",
+        "Grant details stay hidden until you choose a wallet.",
       ),
     ).toBeInTheDocument();
   });
 
-  it("keeps a level-one page title when a grant read fails closed", async () => {
+  it("keeps a level-one privacy gate on direct grant URLs before wallet connection", async () => {
     renderApp("/grants/root-1", unconfiguredContract);
 
     expect(
       await screen.findByRole("heading", {
         level: 1,
-        name: "Authority could not be verified",
+        name: "Connect wallet to view this grant",
       }),
     ).toBeInTheDocument();
   });

@@ -61,6 +61,38 @@ async function connect(user: ReturnType<typeof userEvent.setup>) {
 
 
 describe("real write journey controls", () => {
+  it("does not read parent authority before wallet connection", async () => {
+    const getGrant = vi.fn(canonicalTestAdapter.getGrant);
+    const listGrants = vi.fn(canonicalTestAdapter.listGrants);
+    setup("/grants/root-1/delegate", parentGrantee, {
+      ...canonicalTestAdapter,
+      getGrant,
+      listGrants,
+    });
+
+    expect(await screen.findByRole("heading", { name: "Connect wallet to delegate" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Delegate from root-1" })).not.toBeInTheDocument();
+    expect(getGrant).not.toHaveBeenCalled();
+    expect(listGrants).not.toHaveBeenCalled();
+  });
+
+  it("does not display delegation form outside the connected wallet account", async () => {
+    const user = userEvent.setup();
+    const getGrant = vi.fn(canonicalTestAdapter.getGrant);
+    const listGrants = vi.fn(async () => []);
+    setup("/grants/root-1/delegate", parentGrantee, {
+      ...canonicalTestAdapter,
+      getGrant,
+      listGrants,
+    });
+    await connect(user);
+
+    expect(await screen.findByRole("heading", { name: "Parent authority unavailable for this wallet" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Delegate from root-1" })).not.toBeInTheDocument();
+    await waitFor(() => expect(listGrants).toHaveBeenCalledWith(parentGrantee));
+    expect(getGrant).not.toHaveBeenCalled();
+  });
+
   it("submits a typed root write and navigates only after finalized", async () => {
     const user = userEvent.setup();
     const createRoot = vi.fn(async () => finalized("0xcreate"));
