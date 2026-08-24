@@ -50,7 +50,7 @@ code { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
 .brand { display: inline-flex; align-items: center; gap: 0.75rem; color: var(--color-foreground); font-family: "Outfit Variable", sans-serif; font-weight: 700; text-decoration: none; }
 .brand-mark { width: 2.5rem; height: 2.5rem; display: grid; place-items: center; border-radius: 0.7rem; background: var(--color-primary); color: var(--color-on-primary); box-shadow: var(--shadow-sm); }
 .primary-nav { display: flex; align-items: center; gap: var(--space-xs); margin-inline: auto; }
-.menu-trigger { display: none; width: 2.75rem; padding: 0; }
+.button.menu-trigger { display: none; width: 2.75rem; padding: 0; }
 .nav-link { min-height: 2.75rem; padding: 0.65rem 0.75rem; display: inline-flex; align-items: center; gap: 0.45rem; border-radius: var(--radius-sm); color: var(--color-muted-foreground); font-size: 0.94rem; font-weight: 600; text-decoration: none; }
 .nav-link:hover, .nav-link-active { background: var(--color-muted); color: var(--color-foreground); }
 .site-footer { width: min(100% - 2rem, var(--content-width)); margin-inline: auto; padding-block: var(--space-xl); display: flex; justify-content: space-between; gap: var(--space-lg); border-top: 1px solid var(--color-border); color: var(--color-muted-foreground); }
@@ -163,10 +163,11 @@ code { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
 }
 
 @media (max-width: 48rem) {
-  .header-inner { gap: var(--space-sm); }
-  .menu-trigger { display: inline-flex; margin-left: auto; }
-  .wallet-trigger { width: auto; }
-  .primary-nav { display: none; flex-direction: column; align-items: stretch; }
+  .header-inner { display: grid; grid-template-areas: "brand menu" "wallet wallet" "nav nav"; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-sm); }
+  .brand { grid-area: brand; }
+  .button.menu-trigger { grid-area: menu; width: 2.75rem; display: inline-flex; margin-left: auto; }
+  .wallet-trigger { grid-area: wallet; width: 100%; }
+  .primary-nav { grid-area: nav; display: none; flex-direction: column; align-items: stretch; }
   .primary-nav-open { display: flex; }
   .nav-link { width: 100%; }
   .page-header-row, .detail-heading, .site-footer { flex-direction: column; }

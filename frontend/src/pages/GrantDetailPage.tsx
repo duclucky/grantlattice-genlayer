@@ -31,13 +31,13 @@ export function GrantDetailPage() {
   }, [adapter, grantId]);
 
   if (state === "loading") {
-    return <div className="page"><PageState title="Loading grant">Reading canonical lineage and authority.</PageState></div>;
+    return <div className="page"><PageState headingLevel={1} title="Loading grant">Reading canonical lineage and authority.</PageState></div>;
   }
   if (state === "error") {
-    return <div className="page"><PageState title="Authority could not be verified" tone="danger">The canonical read failed. Access remains denied.</PageState></div>;
+    return <div className="page"><PageState headingLevel={1} title="Authority could not be verified" tone="danger">The canonical read failed. Access remains denied.</PageState></div>;
   }
   if (!grant) {
-    return <div className="page"><PageState title="Grant not found">Check the exact grant ID or return to the workspace.</PageState></div>;
+    return <div className="page"><PageState headingLevel={1} title="Grant not found">Check the exact grant ID or return to the workspace.</PageState></div>;
   }
 
   return (

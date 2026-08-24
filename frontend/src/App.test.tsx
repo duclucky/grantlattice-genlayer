@@ -19,4 +19,15 @@ describe("App bootstrap", () => {
       ),
     ).toBeInTheDocument();
   });
+
+  it("keeps a level-one page title when a grant read fails closed", async () => {
+    renderApp("/grants/root-1", unconfiguredContract);
+
+    expect(
+      await screen.findByRole("heading", {
+        level: 1,
+        name: "Authority could not be verified",
+      }),
+    ).toBeInTheDocument();
+  });
 });
