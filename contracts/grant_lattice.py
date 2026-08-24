@@ -283,7 +283,24 @@ class GrantLattice(gl.Contract):
     @gl.public.write
     def revoke_grant(self, grant_id: str, nonce: str) -> None:
         self._require_no_value()
-        raise gl.vm.UserError("revoke not implemented")
+        grant = self._require_grant(grant_id)
+        if grant.status == "REVOKED":
+            raise gl.vm.UserError("grant already revoked")
+        sender = self._sender()
+        sender_key = self._address_key(sender)
+        if (
+            sender_key != self._address_key(grant.grantor)
+            and sender_key != self._address_key(grant.root_principal)
+        ):
+            raise gl.vm.UserError("caller cannot revoke grant")
+        if not self._has_valid_root_relationship(grant_id):
+            raise gl.vm.UserError("invalid grant tree")
+        nonce_key = self._require_unused_nonce(sender, "revoke_grant", nonce)
+
+        grant.status = "REVOKED"
+        grant.version = u256(int(grant.version) + 1)
+        self.grants[grant_id] = grant
+        self.used_nonces[nonce_key] = True
 
     @gl.public.view
     def get_grant(self, grant_id: str) -> Grant:
@@ -304,16 +321,19 @@ class GrantLattice(gl.Contract):
     @gl.public.view
     def can_invoke(self, grant_id: str, capability_id: str, resource_id: str) -> str:
         if grant_id not in self.grants:
-            return "UNKNOWN_GRANT"
+            return "GRANT_INACTIVE"
         grant = self.grants[grant_id]
         if grant.status != "ACTIVE":
-            return "INACTIVE_STATUS"
-        if not self._is_effective_at(grant_id, int(self._now())):
-            return "INACTIVE_CHAIN"
+            return "GRANT_INACTIVE"
+        now = int(self._now())
+        if now >= int(grant.expires_at):
+            return "EXPIRED"
+        if not self._ancestors_are_effective(grant, now):
+            return "ANCESTOR_INACTIVE"
         if capability_id not in grant.capabilities_csv.split(","):
-            return "CAPABILITY_NOT_GRANTED"
+            return "CAPABILITY_MISSING"
         if resource_id not in grant.resources_csv.split(","):
-            return "RESOURCE_NOT_GRANTED"
+            return "RESOURCE_MISSING"
         return "ALLOWED"
 
     @gl.public.view
@@ -469,6 +489,39 @@ class GrantLattice(gl.Contract):
             current_id = grant.parent_id
             hops += 1
         return True
+
+    def _ancestors_are_effective(self, grant: Grant, now: int) -> bool:
+        child = grant
+        parent_id = child.parent_id
+        hops = 0
+        while parent_id != "":
+            if parent_id not in self.grants or hops >= 8:
+                return False
+            parent = self.grants[parent_id]
+            if parent.status != "ACTIVE" or now >= int(parent.expires_at):
+                return False
+            if int(child.parent_version) != int(parent.version):
+                return False
+            if self._address_key(child.root_principal) != self._address_key(parent.root_principal):
+                return False
+            child = parent
+            parent_id = parent.parent_id
+            hops += 1
+        return True
+
+    def _has_valid_root_relationship(self, grant_id: str) -> bool:
+        current = self.grants[grant_id]
+        expected_root = self._address_key(current.root_principal)
+        hops = 0
+        while True:
+            if self._address_key(current.root_principal) != expected_root:
+                return False
+            if current.parent_id == "":
+                return self._address_key(current.grantor) == expected_root
+            if current.parent_id not in self.grants or hops >= 8:
+                return False
+            current = self.grants[current.parent_id]
+            hops += 1
 
     def _require_grant_id(self, value: str) -> None:
         if len(value) < 3 or len(value) > 80:
