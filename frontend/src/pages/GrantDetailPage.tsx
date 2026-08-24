@@ -23,8 +23,12 @@ export function GrantDetailPage() {
 
   const reload = useCallback(() => {
     let live = true;
-    void Promise.all([adapter.getGrant(grantId), adapter.getReview(grantId)])
-      .then(([nextGrant, nextReview]) => {
+    void adapter.getGrant(grantId)
+      .then(async (nextGrant) => {
+        const reviewExists = nextGrant !== null
+          && nextGrant.depth > 0
+          && nextGrant.status !== "PROPOSED";
+        const nextReview = reviewExists ? await adapter.getReview(grantId) : null;
         if (live) {
           setGrant(nextGrant);
           setReview(nextReview);
