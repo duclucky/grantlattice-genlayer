@@ -1,7 +1,7 @@
 # Phases 11-13 public release and production verification
 
 Status: **PASS for public repository, CI, production deployment, canonical
-reads, access denial, and wallet discovery**
+reads, access decisions, wallet discovery, and an OKX-signed write**
 
 Date: 2026-08-24
 
@@ -43,7 +43,10 @@ CI verify job: 5m51s
 ```
 
 Successful CI:
-`https://github.com/duclucky/grantlattice-genlayer/actions/runs/32700485243`
+`https://github.com/duclucky/grantlattice-genlayer/actions/runs/32703854895`
+
+The latest functional commit covered by that run is `6e5df77`; the first-push
+hygiene run remains `32700485243`.
 
 ## Vercel production deployment
 
@@ -51,15 +54,15 @@ Project: `grantlattice-genlayer`
 
 Production URL: `https://grantlattice-genlayer.vercel.app`
 
-Active deployment ID: `dpl_FCqfihk2yh1y6K2hoNZ8n7fpD2oi`
+Active deployment ID: `dpl_B8xa7a4ssPjufAW81tCjHG9TPg1R`
 
 The deployment used `frontend/` as the project root, the Vite build command,
 `dist` output, and the persisted non-sensitive Production variable
 `VITE_CONTRACT_ADDRESS=0x4CD1Af773D89f7c8c8b561C99060f52f77383E4C`.
-Vercel reported `READY`; the production build transformed 5104 modules and
-completed in 1.63 seconds. An earlier ready deployment used an ephemeral build
-variable and was superseded before final verification; the stable alias points
-only to the persisted-configuration deployment above.
+Vercel reported `READY`; the final production build transformed 5104 modules
+and completed in 1.57 seconds. Earlier ready deployments were superseded while
+the browser-wallet path was debugged; the stable alias points to the deployment
+above.
 
 ## Required HTTP checks
 
@@ -109,12 +112,13 @@ CORS error, `Failed to fetch`, fixture state, or local-storage authority.
 The centered live wallet chooser discovered Rabby (`io.rabby`) and OKX
 (`com.okex.wallet`) and did not auto-select either provider.
 
-## Honest remaining browser boundary
+## Production wallet and canonical reload
 
-No wallet account has been disclosed to the app and no live browser transaction
-has been signed. Connecting requires the user's provider choice and action-time
-confirmation because it shares an account address with the live app. A
-subsequent nonpayable write sends `0 GEN` but still requires action-time
-financial confirmation in the wallet. Until both occur, browser-wallet write
-proof is `PENDING_USER_CONFIRMATION` and Phase 8 script-signed evidence remains
-separate.
+The user deliberately selected OKX, connected
+`0xc495ef51618d03267a1f227afe5b27b38c748272`, and approved a `0 GEN` root grant.
+Transaction
+`0xf6f2d4863e783154a7e3fe6c9feaf2792c762010f139760496ddc9d5effe3904`
+finalized with successful execution and majority agreement. The final
+production UI reloaded the resulting `ACTIVE`, effective grant and a fresh
+`can_invoke` returned `ALLOWED`. The complete, secret-safe record is in
+`docs/evidence/browser/wallet-lifecycle.md`.

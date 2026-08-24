@@ -1,6 +1,7 @@
 # Phase 9 production-address browser proof
 
-Status: **PASS for deployed-state reads and wallet discovery**
+Status: **PASS for deployed-state reads and wallet discovery at the Phase 9
+checkpoint; superseded by the finalized wallet proof**
 
 Date: 2026-08-24
 
@@ -97,12 +98,10 @@ The centered wallet chooser was opened in both browser environments.
 - The user's connected Chrome profile discovered `Rabby Wallet` (`io.rabby`)
   and `OKX Wallet` (`com.okex.wallet`) and still required an explicit choice.
 
-No provider was auto-selected. No account address was read, no wallet popup was
-approved, and no browser transaction was sent at this checkpoint. Connecting a
-wallet would disclose an account address to the local app, and signing a write
-is a financial action requiring action-time user confirmation. Therefore real
-wallet-signed submitted/accepted/finalized proof remains
-`PENDING_USER_CONFIRMATION`; the Phase 8 script-signed receipts remain separate.
+No provider was auto-selected. No account address or transaction was approved
+at this Phase 9 checkpoint. The user subsequently selected OKX and approved the
+root write recorded in `docs/evidence/browser/wallet-lifecycle.md`; the earlier
+script-signed Phase 8 receipts remain separate.
 
 ## Copy and value audit
 
@@ -126,7 +125,7 @@ Observed result:
 GenVM lint: PASS (3 checks), GrantLattice, 9 methods (5 view, 4 write)
 Python/direct/static/parser tests: 63 passed
 Deployment helper tests: 7 passed
-Frontend: 20 files passed, 63 tests passed
+Frontend at this checkpoint: 20 files passed, 63 tests passed
 TypeScript: exit code 0
 Production build: 5104 modules transformed, built in 521ms
 Overall exit code: 0

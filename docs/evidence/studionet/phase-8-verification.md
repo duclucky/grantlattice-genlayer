@@ -182,5 +182,8 @@ stderr, or wallet secret is evidence.
   made.
 - The lifecycle proves one bounded semantic corpus on the live validator set,
   not universal language-model accuracy.
-- Production hosting, public CI, external adopter use, Portal acceptance, and a
-  browser-wallet-signed write remain pending.
+- At this Phase 8 checkpoint, production hosting, public CI, external adopter
+  use, Portal acceptance, and a browser-wallet-signed write were pending.
+  Production/CI and the browser root write were subsequently verified in
+  `docs/evidence/browser/`; external adoption and Portal acceptance remain
+  unclaimed.

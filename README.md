@@ -59,19 +59,22 @@ The full locked specification and claim-to-code matrix are in
 - GenVM lint: 3 checks passed; `GrantLattice` recognized with 9 methods.
 - Python/direct/static/parser tests: 63 passed.
 - Deployment helper tests: 7 passed.
-- Frontend tests: 63 passed across 20 files, plus TypeScript and production build.
+- Frontend tests: 65 passed across 21 files, plus TypeScript and production build.
 - Studionet lifecycle: root creation, deterministic widening rejection,
   validator-controlled attenuation/expansion/ambiguity, allow, revocation, and
   descendant denial all recorded with sanitized finalized evidence.
 - Browser reads: deployed grant list and `ANCESTOR_INACTIVE` access denial loaded
   through the same-origin IC path without CORS or `Failed to fetch` errors.
 - Chrome wallet discovery: Rabby and OKX were detected without auto-selection.
+- OKX browser write: root creation finalized successfully on Studionet; the
+  production UI reloaded `ACTIVE`/effective state and `can_invoke` returned
+  `ALLOWED` for the exact `READ` / `browser-demo` scope.
 
 See [`docs/evidence`](docs/evidence) for current command output, safe receipt
 projections, canonical reads, and honest evidence boundaries.
 
 - Public repository: [`duclucky/grantlattice-genlayer`](https://github.com/duclucky/grantlattice-genlayer)
-- Successful CI: [Windows verification run 32700485243](https://github.com/duclucky/grantlattice-genlayer/actions/runs/32700485243)
+- Successful CI: [Windows verification run 32703854895](https://github.com/duclucky/grantlattice-genlayer/actions/runs/32703854895)
 
 ## Run Locally
 
@@ -133,8 +136,9 @@ patterns; it does not claim external adoption.
 
 ## Honest Limitations
 
-- Browser-wallet signing and a production-host write remain pending explicit
-  action-time wallet confirmation; script-signed Studionet evidence is separate.
+- Browser-wallet proof covers one OKX-signed root creation only; child proposal,
+  semantic review, and revocation browser writes remain test-backed rather than
+  separately wallet-demonstrated.
 - The validator judges authored policy meaning, not external real-world truth;
   ambiguity intentionally remains inactive and retryable.
 - V1 is bounded to 8 clauses, 16 capabilities/resources, and delegation depth 8.

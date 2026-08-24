@@ -9,6 +9,10 @@ coverage/
 __pycache__/
 *.py[cod]
 *.log
+precheck-report.json
+precheck-report.txt
+grade-report.json
+.submission-notes.txt
 .DS_Store
 .vercel/
 frontend/.env
