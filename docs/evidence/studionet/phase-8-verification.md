@@ -94,11 +94,14 @@ Deployed code present: true
 Initial grant IDs: []
 ```
 
-The active identity is bound to Studionet `61999`, source commit
-`6afa48df26e56c9bf7d71f0e36fddf2b9123cf7e`, source SHA-256
+The active identity is bound to Studionet `61999`, public-history-equivalent
+source commit `ef67dae9e930408b4f2ce388cfd6a0329d55ded3`, source SHA-256
 `0fabc7b18aff444613389f577c5c218571f1c86d7cef2afb0315cb17bea1f842`,
 the exact Depends runner, deployer, delegate, deployment hash, and contract
-address. A second `studionet:inspect` returned `deploymentDecision: RESUME`.
+address. The sanitized identity retains the original pre-public-hygiene commit
+mapping; only non-deliverable planning artifacts were removed and the contract
+source digest is unchanged. A second `studionet:inspect` returned
+`deploymentDecision: RESUME`.
 
 ## Consequential lifecycle
 

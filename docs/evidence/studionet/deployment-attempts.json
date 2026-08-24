@@ -6,9 +6,14 @@
       "network": "studionet",
       "chainId": 61999,
       "rpc": "https://studio.genlayer.com/api",
-      "repositoryCommit": "207ecbe53d2d245ca3a477a0b1222b5d196190d1",
-      "sourceCommit": "6afa48df26e56c9bf7d71f0e36fddf2b9123cf7e",
+      "repositoryCommit": "75be43dd1b4f8458dfd7a61ffc3b932579e5f629",
+      "sourceCommit": "ef67dae9e930408b4f2ce388cfd6a0329d55ded3",
       "sourceSha256": "0fabc7b18aff444613389f577c5c218571f1c86d7cef2afb0315cb17bea1f842",
+      "prePublicHygieneCommits": {
+        "repositoryCommit": "207ecbe53d2d245ca3a477a0b1222b5d196190d1",
+        "sourceCommit": "6afa48df26e56c9bf7d71f0e36fddf2b9123cf7e",
+        "reason": "Non-deliverable planning artifacts were removed before the first push; contract source SHA-256 is unchanged."
+      },
       "depends": "py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6",
       "deployer": "0xC495ef51618D03267A1f227aFe5b27B38c748272",
       "delegate": "0x3216E246181F597a91238b3D493Ddf47924A226f",
