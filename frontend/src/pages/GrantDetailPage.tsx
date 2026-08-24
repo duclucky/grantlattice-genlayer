@@ -92,7 +92,7 @@ export function GrantDetailPage() {
           <h1>Grant {grant.grantId}</h1>
           <code className="address-token">{grant.grantee}</code>
         </div>
-        <StatusBadge status={grant.status} />
+        <StatusBadge effective={grant.effective} status={grant.status} />
       </header>
 
       <section className="outcome-panel" aria-labelledby="authority-title">

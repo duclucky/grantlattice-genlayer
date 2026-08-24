@@ -15,8 +15,15 @@ const copy: Record<GrantStatus, string> = {
   REVOKED: "Revoked",
 };
 
-export function StatusBadge({ status }: { status: GrantStatus }) {
-  const Icon = status === "ACTIVE"
+export function StatusBadge({
+  status,
+  effective = status === "ACTIVE",
+}: {
+  status: GrantStatus;
+  effective?: boolean;
+}) {
+  const inactiveThroughLineage = status === "ACTIVE" && !effective;
+  const Icon = status === "ACTIVE" && effective
     ? CheckCircleIcon
     : status === "PROPOSED"
       ? ClockIcon
@@ -25,9 +32,9 @@ export function StatusBadge({ status }: { status: GrantStatus }) {
         : ProhibitIcon;
 
   return (
-    <span className={`status-badge status-${status.toLowerCase()}`}>
+    <span className={`status-badge status-${inactiveThroughLineage ? "inactive" : status.toLowerCase()}`}>
       <Icon aria-hidden="true" size={16} weight="fill" />
-      {copy[status]}
+      {inactiveThroughLineage ? "Inactive through lineage" : copy[status]}
     </span>
   );
 }

@@ -17,4 +17,17 @@ describe("GrantsPage", () => {
     expect(screen.queryByText("root-1")).not.toBeInTheDocument();
     expect(screen.getByText("child-1")).toBeInTheDocument();
   });
+
+  it("never labels a stored ACTIVE grant as active authority when lineage is ineffective", async () => {
+    renderApp("/grants", {
+      ...canonicalTestAdapter,
+      async listGrants() {
+        const grant = await canonicalTestAdapter.getGrant("root-1");
+        return [{ ...grant!, effective: false }];
+      },
+    });
+
+    expect(await screen.findByText("Inactive through lineage")).toBeInTheDocument();
+    expect(screen.queryByText("Active authority")).not.toBeInTheDocument();
+  });
 });

@@ -83,7 +83,7 @@ export function GrantsPage() {
               <Link className="grant-card" to={`/grants/${grant.grantId}`}>
                 <div className="card-row">
                   <strong>{grant.grantId}</strong>
-                  <StatusBadge status={grant.status} />
+                  <StatusBadge effective={grant.effective} status={grant.status} />
                 </div>
                 <p className="muted-label">Grantee</p>
                 <code className="address-token">{grant.grantee}</code>
