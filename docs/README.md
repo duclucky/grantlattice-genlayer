@@ -2,8 +2,9 @@
 
 This specification locks the product, frontend baseline, contract interface,
 storage, safety cards, consensus invariants, and claim-to-code evidence required
-before contract implementation. The Phase 4 gate passed on 2026-08-24, so the
-project status is `BUILDING`; no contract or network result is claimed yet.
+before contract implementation. The Phase 4 gate passed on 2026-08-24; the
+contract, local checks, real frontend adapter, and bounded Studionet lifecycle
+are now verified. Public hosting and browser-wallet write proof remain pending.
 
 ## Identity
 
@@ -11,7 +12,7 @@ project status is `BUILDING`; no contract or network result is claimed yet.
 - Project name: `GrantLattice`
 - Project slug: `grantlattice`
 - Category: `Projects`
-- Status: `BUILDING`
+- Status: `STUDIONET_VERIFIED`
 - Repository: local child repository; public remote is created only after the
   pre-push hygiene gate
 - Target network: `Studionet`
@@ -44,8 +45,10 @@ when its limits are written in natural language.**
 - Consensus question: after objective subset checks pass, whether every child
   clause is `NARROWER_OR_EQUAL`, `EXPANDS_AUTHORITY`, or `AMBIGUOUS` relative to
   exact parent clause IDs, with complete parent-prohibition coverage.
-- State machine: root `ACTIVE`; child `PROPOSED -> REVIEWING -> ACTIVE | DENIED
-  | RETRYABLE`; protective revocation and derived expiry make a grant ineffective.
+- State machine: root `ACTIVE`; child `PROPOSED | RETRYABLE -> ACTIVE | DENIED
+  | RETRYABLE` after a review transaction; transaction-local reviewing is not a
+  persisted grant status. Protective revocation and derived expiry make a grant
+  ineffective.
 - Direct consequence: only a finalized, invariant-valid attenuated verdict
   activates child authority; expansion denies it, and ambiguity/invalid output
   remains inactive and retryable.
@@ -67,9 +70,9 @@ when its limits are written in natural language.**
 | Reuse | `PASS` | Three named consumer types use the same canonical read surface at different execution boundaries. |
 | Contract count | `PASS` | One contract owns grants, reviews, and effective authority; a mirror consumer contract adds no independent trust boundary. |
 | Differentiation | `PASS` | Parent-child semantic monotonicity, pre-action issuance, total clause coverage, and ancestor cascade differ from policy quorum, successor transfer, semantic clearing, interface quarantine, and post-action bond designs. |
-| Claim-to-code | `PASS` | Every retained claim has a locked method/view, transition, direct/static/frontend test target, and network/browser evidence target; pending implementation is labelled. |
-| Full lifecycle | `PASS` | The verified frontend baseline and locked contract lifecycle cover wallet connect, root creation, child proposal, review, finality/failure/retry, canonical reload, access check, revocation, expiry, and descendant denial. Studionet execution remains pending. |
-| Scope honesty | `PASS` | No external execution, protocol-token compatibility, adoption, performance, Studionet behavior, browser proof, production security, or Portal outcome is claimed. |
+| Claim-to-code | `PASS` | Every retained claim maps to an implemented method/view, local test, frontend control/test, and sanitized Studionet evidence; production browser proof remains explicitly pending. |
+| Full lifecycle | `PASS` | Studionet evidence proves authenticated root creation, deterministic objective rejection, validator-controlled attenuation/expansion/ambiguity outcomes, allow, revocation, and descendant denial. |
+| Scope honesty | `PASS` | Studionet contract behavior and browser-local RPC transport are claimed only from recorded evidence; production hosting, browser-wallet writes, adoption, performance, security audit, and Portal outcome are not claimed. |
 
 One failed mandatory gate requires redesign or rejection before contract code.
 
@@ -387,9 +390,9 @@ chain is unexpired and active.
 | Access check | `GrantLatticeAdapter.canInvoke` | `/checks` form | Allowed, denied reason, adapter exception fail-closed | Read/validation state; unavailable is never allow | Each check is a fresh canonical read |
 | Wallet session | `WalletProvider.connect/disconnect` | Header picker/account menu | Deliberate selection, Escape/focus, listener cleanup | Switching/ready/error without simulated account | Disconnect clears provider/account and disables writes |
 
-The Task 5 baseline proves the route/control/state framework. Rows requiring a
-real contract wrapper remain pending until Tasks 11-13 and cannot be claimed as
-browser-complete earlier.
+The route/control/state framework and real GenLayer adapter are implemented and
+tested. Browser-local transport reached Studionet without CORS/Failed-to-fetch;
+a user-wallet-signed production write remains pending and is not claimed here.
 
 ## Evidence policy
 
@@ -713,13 +716,13 @@ the canonical grant interface.
 
 | Public/product claim | Method/state transition | Canonical view | Direct/static test | Frontend control/test | Studionet/browser evidence target | Current status |
 | --- | --- | --- | --- | --- | --- | --- |
-| Root authority is authenticated and isolated | `create_root_grant`: absent -> `ACTIVE`; sender locked as root/grantor; append ID once | `get_grant`, `list_grant_ids`, `is_effective` | Wrong caller binding, duplicate ID/nonce, index isolation/pagination, time bounds | Root form, wallet gate, list/detail lifecycle/reload tests | `docs/evidence/studionet/root-create.json`; root list/detail browser capture | Pending implementation |
-| A child cannot exceed deterministic parent scope | `propose_child_grant`: absent -> `PROPOSED` after subset/depth/time/clause checks | `get_grant`, `is_effective` | Wider cap/resource/time/depth, clause mismatch, wrong actor/state | Delegate form parent gate/validation/finality tests | `docs/evidence/studionet/child-propose.json`; child detail browser capture | Pending implementation |
-| Only validator-agreed qualitative attenuation activates a child | `review_child_grant`: `PROPOSED/RETRYABLE -> ACTIVE/DENIED/RETRYABLE` | `get_review`, `get_grant`, `is_effective` | Semantic replay, malicious leader/validator outputs, total coverage/invariant tests | Review/retry control, stages, canonical reload | `docs/evidence/studionet/child-review.json`; finalized review UI | Pending implementation |
-| Revocation/expiry fail-closes every descendant without partial cascade | `revoke_grant`: target -> `REVOKED`; descendant result derived | `is_effective`, `can_invoke`, `get_grant` | Deep chain, expired revoke, wrong actor, unrelated tree, no double revoke | Eligible revoke control and descendant refresh | `docs/evidence/studionet/revoke-cascade.json`; denied check UI | Pending implementation |
-| Exact protected actions fail closed | No write; live bounded chain/scope evaluation | `can_invoke` exact reason | All reason enums, boundary equality, missing grant, stale phase | `/checks` allowed/denied/unavailable tests | `docs/evidence/studionet/access-check.json`; browser RPC proof | Pending implementation |
-| Browser users choose a wallet and see only real lifecycle state | Wallet/network session plus adapter writes; no simulated state | Fresh contract reads after `FINALIZED` | Provider/network/receipt parser tests | Picker, account menu, disconnect, Activity, reload tests | `docs/evidence/browser/wallet-lifecycle.md`; production URL | Wallet baseline complete; real write pending |
-| One interface is reusable at three distinct execution boundaries | Same views; no consumer mirror contract | `is_effective`, `can_invoke` | Adapter examples and fail-closed wrapper tests | `/integrate` patterns and honesty disclaimer | `docs/evidence/integration/adapter-proof.md` | Interface documented; one real adapter pending |
+| Root authority is authenticated and isolated | `create_root_grant`: absent -> `ACTIVE`; sender locked as root/grantor; append ID once | `get_grant`, `list_grant_ids`, `is_effective` | Wrong caller binding, duplicate ID/nonce, index isolation/pagination, time bounds | Root form, wallet gate, list/detail lifecycle/reload tests | `docs/evidence/studionet/lifecycle.json` (`CREATE_ROOT`) | Local + Studionet PASS; browser write pending |
+| A child cannot exceed deterministic parent scope | `propose_child_grant`: absent -> `PROPOSED` after subset/depth/time/clause checks | `get_grant`, `is_effective` | Wider cap/resource/time/depth, clause mismatch, wrong actor/state | Delegate form parent gate/validation/finality tests | `docs/evidence/studionet/lifecycle.json` (`PROVE_OBJECTIVE_REJECTION`, `PROPOSE_VALID`) | Local + Studionet PASS; browser write pending |
+| Only validator-agreed qualitative attenuation activates a child | `review_child_grant`: `PROPOSED/RETRYABLE -> ACTIVE/DENIED/RETRYABLE` | `get_review`, `get_grant`, `is_effective` | Semantic replay, malicious leader/validator outputs, total coverage/invariant tests | Review/retry control, stages, canonical reload | `docs/evidence/studionet/lifecycle.json` (three review outcomes) | Local + Studionet PASS; browser write pending |
+| Revocation/expiry fail-closes every descendant without partial cascade | `revoke_grant`: target -> `REVOKED`; descendant result derived | `is_effective`, `can_invoke`, `get_grant` | Deep chain, expired revoke, wrong actor, unrelated tree, no double revoke | Eligible revoke control and descendant refresh | `docs/evidence/studionet/lifecycle.json` (`REVOKE_ROOT`) | Local + Studionet PASS; browser write pending |
+| Exact protected actions fail closed | No write; live bounded chain/scope evaluation | `can_invoke` exact reason | All reason enums, boundary equality, missing grant, stale phase | `/checks` allowed/denied/unavailable tests | `docs/evidence/studionet/lifecycle.json` (`ALLOWED -> ANCESTOR_INACTIVE`) | Local + Studionet PASS; browser route proof pending |
+| Browser users choose a wallet and see only real lifecycle state | Wallet/network session plus adapter writes; no simulated state | Fresh contract reads after `FINALIZED` | Provider/network/receipt parser tests | Picker, account menu, disconnect, Activity, reload tests | `docs/evidence/frontend/phase-7-real-adapter.md`; production proof target | Adapter/browser transport PASS; wallet-signed write pending |
+| One interface is reusable at three distinct execution boundaries | Same views; no consumer mirror contract | `is_effective`, `can_invoke` | Adapter examples and fail-closed wrapper tests | `/integrate` patterns and honesty disclaimer | `docs/evidence/frontend/phase-7-real-adapter.md` | Real adapter PASS; external adoption not claimed |
 
 ## Analogue and differentiation matrix
 
@@ -761,16 +764,15 @@ the canonical grant interface.
     and require `NO BLOCKER` before preparing copy-ready Portal fields. Do not
     click final Submit without explicit action-time authorization.
 
-Planned evidence targets:
+Evidence and remaining targets:
 
 - `docs/evidence/specification/phase-4-gate.md`
-- `docs/evidence/local/check-output.txt`
+- `docs/evidence/contract/phase-5-6-local-verification.md`
+- `docs/evidence/frontend/phase-7-real-adapter.md`
+- `docs/evidence/studionet/delegate-funding.json`
 - `docs/evidence/studionet/deployment.json`
-- `docs/evidence/studionet/root-create.json`
-- `docs/evidence/studionet/child-propose.json`
-- `docs/evidence/studionet/child-review.json`
-- `docs/evidence/studionet/access-check.json`
-- `docs/evidence/studionet/revoke-cascade.json`
+- `docs/evidence/studionet/deployment-attempts.json`
+- `docs/evidence/studionet/lifecycle.json`
 - `docs/evidence/browser/wallet-lifecycle.md`
 - `docs/evidence/browser/production-verification.md`
 - `docs/evidence/integration/adapter-proof.md`
@@ -811,11 +813,11 @@ Planned evidence targets:
 
 ## Honest limitations
 
-- The 12-case corpus is a single-model design spike, not GenVM,
-  multi-validator, Studionet, integration, performance, or adoption evidence.
+- The local 12-case corpus supplements rather than replaces the recorded
+  multi-validator Studionet lifecycle; it is not performance or adoption evidence.
 - Contract implementation, lint/direct tests, semantic mocks, deployment,
-  Studionet finality, real adapter, and real browser transaction evidence are
-  pending; status `BUILDING` does not imply any of them passed.
+  Studionet finality, real adapter, and browser-local IC transport are verified.
+  A production URL and browser-wallet-signed transaction remain pending.
 - The validator judges authored policy meaning, not external real-world truth;
   semantic false positives/negatives remain possible and ambiguity fail-closes.
 - V1 accepts at most 8 clauses, 16 capabilities/resources, and depth 8; larger

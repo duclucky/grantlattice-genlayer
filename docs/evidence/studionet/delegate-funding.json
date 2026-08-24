@@ -1,0 +1,14 @@
+{
+  "network": "studionet",
+  "chainId": 61999,
+  "source": "0xC495ef51618D03267A1f227aFe5b27B38c748272",
+  "destination": "0x3216E246181F597a91238b3D493Ddf47924A226f",
+  "valueGEN": "1",
+  "transactionHash": "0x3b5768f7a5bef5e6b9e3c85cb235ecfe1da92b567a63965501c0bc0adc7398c8",
+  "explorer": "https://explorer-studio.genlayer.com/tx/0x3b5768f7a5bef5e6b9e3c85cb235ecfe1da92b567a63965501c0bc0adc7398c8",
+  "status": "CONFIRMED",
+  "blockNumber": 0,
+  "destinationBalanceBeforeGEN": "0",
+  "destinationBalanceAfterGEN": "1",
+  "confirmedAt": "2026-08-24T06:32:16.330Z"
+}

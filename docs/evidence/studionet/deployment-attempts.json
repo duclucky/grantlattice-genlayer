@@ -1,0 +1,31 @@
+{
+  "network": "studionet",
+  "attempts": [
+    {
+      "transactionHash": "0x1db352f36545fa2207389ebc12c40a7b857398895728c7e61ecc87542189b13f",
+      "network": "studionet",
+      "chainId": 61999,
+      "rpc": "https://studio.genlayer.com/api",
+      "repositoryCommit": "207ecbe53d2d245ca3a477a0b1222b5d196190d1",
+      "sourceCommit": "6afa48df26e56c9bf7d71f0e36fddf2b9123cf7e",
+      "sourceSha256": "0fabc7b18aff444613389f577c5c218571f1c86d7cef2afb0315cb17bea1f842",
+      "depends": "py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6",
+      "deployer": "0xC495ef51618D03267A1f227aFe5b27B38c748272",
+      "delegate": "0x3216E246181F597a91238b3D493Ddf47924A226f",
+      "status": "FINALIZED",
+      "submittedAt": "2026-08-24T06:33:18.332Z",
+      "acceptedAt": "2026-08-24T06:33:22.341Z",
+      "receipt": {
+        "label": "deploy",
+        "transactionHash": "0x1db352f36545fa2207389ebc12c40a7b857398895728c7e61ecc87542189b13f",
+        "status": "FINALIZED",
+        "txExecutionResult": "SUCCESS",
+        "consensusResult": "MAJORITY_AGREE",
+        "contractAddress": "0x4CD1Af773D89f7c8c8b561C99060f52f77383E4C"
+      },
+      "result": "SUCCESS",
+      "finalizedAt": "2026-08-24T06:33:55.180Z",
+      "contractAddress": "0x4CD1Af773D89f7c8c8b561C99060f52f77383E4C"
+    }
+  ]
+}
