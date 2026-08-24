@@ -1,0 +1,17 @@
+.env
+.env.*
+!.env.example
+.venv/
+node_modules/
+dist/
+coverage/
+.pytest_cache/
+__pycache__/
+*.py[cod]
+*.log
+.DS_Store
+.vercel/
+frontend/.env
+frontend/.env.*
+!frontend/.env.example
+docs/evidence/**/private/
