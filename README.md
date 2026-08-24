@@ -4,7 +4,7 @@ GrantLattice uses GenLayer validator consensus to ensure natural-language agent 
 
 ## Live App
 
-Production deployment is pending Phase 12 verification.
+[`https://grantlattice-genlayer.vercel.app`](https://grantlattice-genlayer.vercel.app)
 
 ## Deployed Contract
 
@@ -69,6 +69,9 @@ The full locked specification and claim-to-code matrix are in
 
 See [`docs/evidence`](docs/evidence) for current command output, safe receipt
 projections, canonical reads, and honest evidence boundaries.
+
+- Public repository: [`duclucky/grantlattice-genlayer`](https://github.com/duclucky/grantlattice-genlayer)
+- Successful CI: [Windows verification run 32700485243](https://github.com/duclucky/grantlattice-genlayer/actions/runs/32700485243)
 
 ## Run Locally
 

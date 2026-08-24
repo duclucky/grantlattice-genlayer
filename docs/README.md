@@ -3,8 +3,9 @@
 This specification locks the product, frontend baseline, contract interface,
 storage, safety cards, consensus invariants, and claim-to-code evidence required
 before contract implementation. The Phase 4 gate passed on 2026-08-24; the
-contract, local checks, real frontend adapter, and bounded Studionet lifecycle
-are now verified. Public hosting and browser-wallet write proof remain pending.
+contract, local checks, real frontend adapter, bounded Studionet lifecycle,
+public repository, production hosting, and live canonical reads are now
+verified. Browser-wallet write proof remains pending.
 
 ## Identity
 
@@ -12,9 +13,9 @@ are now verified. Public hosting and browser-wallet write proof remain pending.
 - Project name: `GrantLattice`
 - Project slug: `grantlattice`
 - Category: `Projects`
-- Status: `STUDIONET_VERIFIED`
-- Repository: local child repository; public remote is created only after the
-  pre-push hygiene gate
+- Status: `PRODUCTION_VERIFIED`
+- Repository: `https://github.com/duclucky/grantlattice-genlayer` (public;
+  pre-push hygiene and CI passed)
 - Target network: `Studionet`
 
 ## One-sentence product hook
@@ -70,9 +71,9 @@ when its limits are written in natural language.**
 | Reuse | `PASS` | Three named consumer types use the same canonical read surface at different execution boundaries. |
 | Contract count | `PASS` | One contract owns grants, reviews, and effective authority; a mirror consumer contract adds no independent trust boundary. |
 | Differentiation | `PASS` | Parent-child semantic monotonicity, pre-action issuance, total clause coverage, and ancestor cascade differ from policy quorum, successor transfer, semantic clearing, interface quarantine, and post-action bond designs. |
-| Claim-to-code | `PASS` | Every retained claim maps to an implemented method/view, local test, frontend control/test, and sanitized Studionet evidence; production browser proof remains explicitly pending. |
+| Claim-to-code | `PASS` | Every retained claim maps to an implemented method/view, local test, frontend control/test, and sanitized Studionet/browser evidence; production wallet writes remain explicitly pending. |
 | Full lifecycle | `PASS` | Studionet evidence proves authenticated root creation, deterministic objective rejection, validator-controlled attenuation/expansion/ambiguity outcomes, allow, revocation, and descendant denial. |
-| Scope honesty | `PASS` | Studionet contract behavior and browser-local RPC transport are claimed only from recorded evidence; production hosting, browser-wallet writes, adoption, performance, security audit, and Portal outcome are not claimed. |
+| Scope honesty | `PASS` | Studionet contract behavior, production hosting, and live canonical reads are claimed only from recorded evidence; browser-wallet writes, adoption, performance, security audit, and Portal outcome are not claimed. |
 
 One failed mandatory gate requires redesign or rejection before contract code.
 
@@ -720,8 +721,8 @@ the canonical grant interface.
 | A child cannot exceed deterministic parent scope | `propose_child_grant`: absent -> `PROPOSED` after subset/depth/time/clause checks | `get_grant`, `is_effective` | Wider cap/resource/time/depth, clause mismatch, wrong actor/state | Delegate form parent gate/validation/finality tests | `docs/evidence/studionet/lifecycle.json` (`PROVE_OBJECTIVE_REJECTION`, `PROPOSE_VALID`) | Local + Studionet PASS; browser write pending |
 | Only validator-agreed qualitative attenuation activates a child | `review_child_grant`: `PROPOSED/RETRYABLE -> ACTIVE/DENIED/RETRYABLE` | `get_review`, `get_grant`, `is_effective` | Semantic replay, malicious leader/validator outputs, total coverage/invariant tests | Review/retry control, stages, canonical reload | `docs/evidence/studionet/lifecycle.json` (three review outcomes) | Local + Studionet PASS; browser write pending |
 | Revocation/expiry fail-closes every descendant without partial cascade | `revoke_grant`: target -> `REVOKED`; descendant result derived | `is_effective`, `can_invoke`, `get_grant` | Deep chain, expired revoke, wrong actor, unrelated tree, no double revoke | Eligible revoke control and descendant refresh | `docs/evidence/studionet/lifecycle.json` (`REVOKE_ROOT`) | Local + Studionet PASS; browser write pending |
-| Exact protected actions fail closed | No write; live bounded chain/scope evaluation | `can_invoke` exact reason | All reason enums, boundary equality, missing grant, stale phase | `/checks` allowed/denied/unavailable tests | `docs/evidence/studionet/lifecycle.json` (`ALLOWED -> ANCESTOR_INACTIVE`) | Local + Studionet PASS; browser route proof pending |
-| Browser users choose a wallet and see only real lifecycle state | Wallet/network session plus adapter writes; no simulated state | Fresh contract reads after `FINALIZED` | Provider/network/receipt parser tests | Picker, account menu, disconnect, Activity, reload tests | `docs/evidence/frontend/phase-7-real-adapter.md`; production proof target | Adapter/browser transport PASS; wallet-signed write pending |
+| Exact protected actions fail closed | No write; live bounded chain/scope evaluation | `can_invoke` exact reason | All reason enums, boundary equality, missing grant, stale phase | `/checks` allowed/denied/unavailable tests | `docs/evidence/studionet/lifecycle.json` (`ALLOWED -> ANCESTOR_INACTIVE`); `docs/evidence/browser/production-verification.md` | Local + Studionet + production browser PASS |
+| Browser users choose a wallet and see only real lifecycle state | Wallet/network session plus adapter writes; no simulated state | Fresh contract reads after `FINALIZED` | Provider/network/receipt parser tests | Picker, account menu, disconnect, Activity, reload tests | `docs/evidence/frontend/phase-7-real-adapter.md`; `docs/evidence/browser/production-verification.md` | Production reads and real provider discovery PASS; wallet-signed write pending |
 | One interface is reusable at three distinct execution boundaries | Same views; no consumer mirror contract | `is_effective`, `can_invoke` | Adapter examples and fail-closed wrapper tests | `/integrate` patterns and honesty disclaimer | `docs/evidence/frontend/phase-7-real-adapter.md` | Real adapter PASS; external adoption not claimed |
 
 ## Analogue and differentiation matrix
@@ -802,8 +803,8 @@ Evidence and remaining targets:
 - Every claimed browser workflow has a real client wrapper, legal UI control,
   frontend test, submitted/accepted/finalized/failed/retry handling, and fresh
   canonical state reload.
-- Browser-local RPC behavior has no CORS/Failed-to-fetch failure; production URL
-  and route verification exist; no fixtures or simulated chain state ship.
+- Browser-local and production RPC behavior has no CORS/Failed-to-fetch failure;
+  production URL and route verification exist; no fixtures or simulated chain state ship.
 - Public repository contains only allowlisted project files, green CI, accurate
   exact counts/claims, and no secret/control/parent-workspace material.
 - Precheck for project/category reports `NO BLOCKER`; every master checklist item
@@ -816,8 +817,8 @@ Evidence and remaining targets:
 - The local 12-case corpus supplements rather than replaces the recorded
   multi-validator Studionet lifecycle; it is not performance or adoption evidence.
 - Contract implementation, lint/direct tests, semantic mocks, deployment,
-  Studionet finality, real adapter, and browser-local IC transport are verified.
-  A production URL and browser-wallet-signed transaction remain pending.
+  Studionet finality, public CI, production hosting, real adapter, and live IC
+  transport are verified. A browser-wallet-signed transaction remains pending.
 - The validator judges authored policy meaning, not external real-world truth;
   semantic false positives/negatives remain possible and ambiguity fail-closes.
 - V1 accepts at most 8 clauses, 16 capabilities/resources, and depth 8; larger
@@ -825,10 +826,11 @@ Evidence and remaining targets:
 - Only the latest canonical review is stored; full onchain review history and
   restore/cure of revoked grants are out of scope.
 - A2A, MCP, and Google ADK are documented consumer patterns, not deployed or
-  adopted protocol integrations. One real fail-closed adapter is still required.
+  adopted protocol integrations. One external fail-closed protocol adapter is
+  still required for the next milestone.
 - No contract value path, fee, bond, reward, escrow, payout, or credit exists.
-- No adopter commitment, external integration request, public repository, live
-  application, Portal submission, or acceptance exists yet.
+- No adopter commitment, external integration request, Portal submission, or
+  acceptance exists yet.
 
 ## Kill criteria
 
