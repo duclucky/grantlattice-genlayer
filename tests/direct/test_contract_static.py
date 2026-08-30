@@ -57,6 +57,19 @@ def test_contract_locks_storage_and_public_interface():
         "list_grant_ids",
     }.issubset(methods)
 
+    can_invoke = next(
+        node
+        for node in contract.body
+        if isinstance(node, ast.FunctionDef) and node.name == "can_invoke"
+    )
+    assert [argument.arg for argument in can_invoke.args.args] == [
+        "self",
+        "grant_id",
+        "actor",
+        "capability_id",
+        "resource_id",
+    ]
+
 
 def test_v1_has_no_payable_or_value_transfer_path():
     text = source()

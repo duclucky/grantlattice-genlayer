@@ -319,12 +319,20 @@ class GrantLattice(gl.Contract):
         return self._is_effective_at(grant_id, int(self._now()))
 
     @gl.public.view
-    def can_invoke(self, grant_id: str, capability_id: str, resource_id: str) -> str:
+    def can_invoke(
+        self,
+        grant_id: str,
+        actor: Address,
+        capability_id: str,
+        resource_id: str,
+    ) -> str:
         if grant_id not in self.grants:
             return "GRANT_INACTIVE"
         grant = self.grants[grant_id]
         if grant.status != "ACTIVE":
             return "GRANT_INACTIVE"
+        if self._address_key(actor) != self._address_key(grant.grantee):
+            return "ACTOR_MISMATCH"
         now = int(self._now())
         if now >= int(grant.expires_at):
             return "EXPIRED"

@@ -38,21 +38,33 @@ def deploy_active_child(contract, vm, principal, grantor, child_grantee) -> None
 def test_can_invoke_returns_exact_fail_closed_reasons_in_locked_precedence(
     contract, direct_vm, direct_alice, direct_bob, direct_charlie
 ):
-    assert contract.can_invoke("missing", "READ", "case-1") == "GRANT_INACTIVE"
+    assert contract.can_invoke("missing", direct_bob, "READ", "case-1") == "GRANT_INACTIVE"
     create_root(contract, direct_vm, direct_alice, direct_bob)
     propose_child(contract, direct_vm, direct_bob, direct_charlie)
-    assert contract.can_invoke("child-1", "READ", "case-1") == "GRANT_INACTIVE"
+    assert contract.can_invoke("child-1", direct_charlie, "READ", "case-1") == "GRANT_INACTIVE"
 
     activate_child(contract, direct_vm, direct_bob)
-    assert contract.can_invoke("child-1", "READ", "case-1") == "ALLOWED"
-    assert contract.can_invoke("child-1", "WRITE", "case-1") == "CAPABILITY_MISSING"
-    assert contract.can_invoke("child-1", "READ", "case-2") == "RESOURCE_MISSING"
+    assert contract.can_invoke("child-1", direct_charlie, "READ", "case-1") == "ALLOWED"
+    assert contract.can_invoke("child-1", direct_charlie, "WRITE", "case-1") == "CAPABILITY_MISSING"
+    assert contract.can_invoke("child-1", direct_charlie, "READ", "case-2") == "RESOURCE_MISSING"
 
     direct_vm.sender = direct_alice
     contract.revoke_grant("root-1", "revoke-root")
     assert contract.get_grant("child-1").status == "ACTIVE"
-    assert contract.can_invoke("child-1", "READ", "case-1") == "ANCESTOR_INACTIVE"
-    assert contract.can_invoke("root-1", "READ", "case-1") == "GRANT_INACTIVE"
+    assert contract.can_invoke("child-1", direct_charlie, "READ", "case-1") == "ANCESTOR_INACTIVE"
+    assert contract.can_invoke("root-1", direct_bob, "READ", "case-1") == "GRANT_INACTIVE"
+
+
+def test_can_invoke_rejects_public_grant_id_for_wrong_actor(
+    contract, direct_vm, direct_alice, direct_bob, direct_charlie
+):
+    create_root(contract, direct_vm, direct_alice, direct_bob)
+
+    assert (
+        contract.can_invoke("root-1", direct_charlie, "READ", "case-1")
+        == "ACTOR_MISMATCH"
+    )
+    assert contract.can_invoke("root-1", direct_bob, "READ", "case-1") == "ALLOWED"
 
 
 def test_own_expiry_precedes_scope_and_stale_active_never_allows(
@@ -69,13 +81,13 @@ def test_own_expiry_precedes_scope_and_stale_active_never_allows(
     )
     set_time(direct_vm, NOW + 19)
     assert contract.is_effective("root-1") is True
-    assert contract.can_invoke("root-1", "WRITE", "missing") == "CAPABILITY_MISSING"
+    assert contract.can_invoke("root-1", direct_bob, "WRITE", "missing") == "CAPABILITY_MISSING"
     set_time(direct_vm, NOW + 20)
     assert contract.get_grant("root-1").status == "ACTIVE"
     assert contract.is_effective("root-1") is False
-    assert contract.can_invoke("root-1", "WRITE", "missing") == "EXPIRED"
+    assert contract.can_invoke("root-1", direct_bob, "WRITE", "missing") == "EXPIRED"
     set_time(direct_vm, NOW + 21)
-    assert contract.can_invoke("root-1", "READ", "case-1") == "EXPIRED"
+    assert contract.can_invoke("root-1", direct_bob, "READ", "case-1") == "EXPIRED"
 
 
 def test_recorded_grantor_and_root_principal_can_revoke_and_version_increments(
@@ -186,6 +198,6 @@ def test_root_revoke_fail_closes_deep_descendants_without_touching_other_tree(
     assert contract.get_grant("grandchild-1").status == "ACTIVE"
     assert contract.is_effective("child-1") is False
     assert contract.is_effective("grandchild-1") is False
-    assert contract.can_invoke("grandchild-1", "READ", "case-1") == "ANCESTOR_INACTIVE"
+    assert contract.can_invoke("grandchild-1", direct_alice, "READ", "case-1") == "ANCESTOR_INACTIVE"
     assert contract.is_effective("other-root") is True
-    assert contract.can_invoke("other-root", "READ", "case-1") == "ALLOWED"
+    assert contract.can_invoke("other-root", direct_bob, "READ", "case-1") == "ALLOWED"
