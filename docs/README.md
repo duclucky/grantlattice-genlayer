@@ -804,6 +804,7 @@ Evidence and remaining targets:
 - `docs/evidence/browser/wallet-lifecycle.md`
 - `docs/evidence/browser/production-verification.md`
 - `docs/evidence/integration/adapter-proof.md`
+- `docs/evidence/contract/judge-remediation-local-verification.md`
 
 ## Definition of Done
 

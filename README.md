@@ -58,9 +58,9 @@ The full locked specification and claim-to-code matrix are in
 ## Verified Evidence
 
 - GenVM lint: 3 checks passed; `GrantLattice` recognized with 9 methods.
-- Python/direct/static/parser tests: 63 passed.
-- Deployment helper tests: 7 passed.
-- Frontend tests: 65 passed across 21 files, plus TypeScript and production build.
+- Python/direct/static/parser tests: 70 passed.
+- Deployment helper tests: 8 passed.
+- Frontend tests: 75 passed across 21 files, plus TypeScript and production build.
 - Studionet lifecycle: root creation, deterministic widening rejection,
   validator-controlled attenuation/expansion/ambiguity, allow, revocation, and
   descendant denial all recorded with sanitized finalized evidence.
