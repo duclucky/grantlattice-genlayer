@@ -161,7 +161,7 @@ back to Grants without replacing browser back behavior.
 | Grant detail `/grants/:grantId` | Understand lineage, effective authority, clauses, history, and legal next actions | Delegate, review/retry, revoke, or check access when eligible | Loading, not found, active, proposed, denied, retryable, revoked, expired, read unavailable | Core outcome before technical context; lineage becomes vertical list |
 | Delegate `/grants/:grantId/delegate` | Propose one direct child bounded by its parent | Submit child proposal | Parent loading/unavailable, unauthorized, ineffective/expired, editable, validation, wallet/finality states | Parent limits remain visible in a collapsible summary; touch-friendly clause rows |
 | Access Check `/checks` | Decide whether one protected action should proceed | Run canonical access check | Empty, validating, reading, allowed, denied with reason, unavailable/fail-closed | Result follows form in reading order; no color-only allow/deny signal |
-| Activity `/activity` | Revisit real wallet operations and recovery actions | Open the related grant or legal retry | Empty, submitted, accepted/decided, finalized, failed, retryable | Chronological cards with concise state and one contextual action |
+| Activity `/activity` | Revisit the connected wallet's real operations across reloads and return visits | Verify a transaction in Explorer or retry a failed history read | Disconnected, wrong network, loading, unavailable/retry, genuine empty, submitted, accepted/decided, finalized, failed, retryable, unconfirmed | Chronological cards with concise state, wrapped hashes, pagination, and one Explorer action |
 | Integrate `/integrate` | Understand the stable consumer read boundary | Choose A2A, MCP, or Google ADK pattern | Overview and three documented patterns; no adoption claim | Segmented links become stacked buttons; code wraps horizontally within its own scroller |
 | Help `/help` | Understand statuses, safety, recovery, limits, and network behavior | Find a recovery answer or return to the relevant task | Searchable sections, wallet/network help, review states, honest limits | Collapsible sections with keyboard-accessible native controls |
 
@@ -174,7 +174,7 @@ back to Grants without replacing browser back behavior.
 | Grant ID, human-readable scopes, grantee, expiry, effective state | `USER_PRIMARY` | Operators and integrators | Needed to decide what authority exists |
 | Lineage and parent relationship | `USER_PRIMARY` | Grant viewers | Needed to understand inherited authority and cascade |
 | User-facing review outcome and next step | `USER_PRIMARY` | Grant viewers | Needed to know activation, denial, or retry consequence |
-| Transaction hash and Explorer link | `USER_CONTEXTUAL` | User who submitted a transaction | Optional verification without dominating the workflow |
+| Allowlisted transaction label, grant ID, timestamp, status, hash, and Explorer link | `USER_CONTEXTUAL` | Connected wallet workspace | Account-scoped projection of public network facts; no calldata, receipt, validator, or raw storage payload |
 | Clause IDs and exact canonical text | `USER_CONTEXTUAL` | Grant detail/integration contexts | Needed for careful verification but not as dashboard metrics |
 | Integration method/view names | `USER_CONTEXTUAL` | Integrators on `/integrate` | Needed only at the integration boundary |
 | Raw validator JSON, prompt, reasoning, attempt internals | `SYSTEM_ONLY` | Contract/tests/evidence | Exposing it invites confusion and prompt-oriented misuse |
@@ -182,9 +182,13 @@ back to Grants without replacing browser back behavior.
 | Submission scoring, reviewer notes, control prompts | `SYSTEM_ONLY` | Internal process only | Never part of the product surface |
 
 Wallet-scoped rendering is a workspace convenience, not confidentiality.
-Canonical grant IDs, grantees, scopes, lineage, expiry, status, and reviews remain
-publicly readable through contract views, RPC, and Explorer even after a user
-disconnects. Disconnect clears only the selected provider/account UI session and
+Canonical grant IDs, grantees, scopes, lineage, expiry, status, reviews, and
+network transactions remain publicly readable through contract views, RPC, and
+Explorer even after a user disconnects. Activity queries only after a wallet is
+connected on Studionet and returns an explicit allowlist of fields for matching
+wallet-to-active-contract grant operations. It never forwards calldata, raw
+receipts, validator internals, or unrelated account activity. Disconnect clears
+the selected provider/account UI session, removes Activity data immediately, and
 disables writes.
 
 ### UI action matrix
@@ -310,8 +314,9 @@ and `version=1`. A child copies the parent's `max_depth`, stores
 `Review` fields are `child_id`, monotonic `attempt`, `verdict`, canonical
 `expansion_clause_ids_csv`, canonical `ambiguous_clause_ids_csv`, and a
 contract-derived `reason_code`. `reviews[child_id]` is the latest canonical
-review, not a claim of full onchain attempt history. Wallet receipts and the
-session Activity view remain distinct from canonical latest-review state.
+review, not a claim of full onchain attempt history. The wallet-scoped Activity
+projection combines current-session progress with allowlisted public Studionet
+transaction history; it remains distinct from canonical latest-review state.
 
 ### State machine
 
@@ -403,6 +408,7 @@ permissive fallback.
 | Grant discovery/detail | `list_grant_ids` plus `GrantLatticeAdapter.listGrants/getGrant` | `/grants` list/search and detail links | Pagination, empty, filter, not-found, unavailable | Read-only; no transaction/finality claim | Every displayed record resolves through canonical `get_grant` |
 | Access check | `GrantLatticeAdapter.canInvoke` | `/checks` form | Allowed, denied reason, adapter exception fail-closed | Read/validation state; unavailable is never allow | Each check is a fresh canonical read |
 | Wallet session | `WalletProvider.connect/disconnect` | Header picker/account menu | Deliberate selection, Escape/focus, listener cleanup | Switching/ready/error without simulated account | Disconnect clears provider/account and disables writes |
+| Wallet activity history | `loadActivityHistory` through same-origin `/api/activity` | `/activity` automatic load, retry, pagination, Explorer link | Scope validation, loading/error/empty, reload/remount, switch/logout, late response, deduplication, pagination | Merges live session stages with receipt-derived network stages; unavailable never becomes empty/success | Re-queries by connected wallet + active contract + Studionet on connect, return, retry, and post-finality refresh |
 
 The route/control/state framework and real GenLayer adapter are implemented and
 tested. Browser-local transport reached Studionet without CORS/Failed-to-fetch;

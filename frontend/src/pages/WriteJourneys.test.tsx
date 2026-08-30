@@ -6,7 +6,7 @@ import { describe, expect, it, vi } from "vitest";
 import { App } from "../App";
 import { ContractAdapterProvider } from "../adapters/ContractAdapterProvider";
 import type { GrantLatticeAdapter } from "../adapters/contract";
-import { TransactionProvider } from "../transactions/TransactionProvider";
+import { RuntimeTransactionProvider } from "../transactions/RuntimeTransactionProvider";
 import {
   canonicalTestAdapter,
   parentGrantee,
@@ -44,9 +44,9 @@ function setup(route: string, account: Address, adapter: GrantLatticeAdapter) {
     <MemoryRouter initialEntries={[route]}>
       <WalletProvider discover={async () => [info]}>
         <ContractAdapterProvider adapter={adapter}>
-          <TransactionProvider>
+          <RuntimeTransactionProvider loadHistory={async () => []}>
             <App />
-          </TransactionProvider>
+          </RuntimeTransactionProvider>
         </ContractAdapterProvider>
       </WalletProvider>
     </MemoryRouter>,

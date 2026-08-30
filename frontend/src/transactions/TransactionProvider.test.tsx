@@ -8,6 +8,9 @@ import {
   useTransactions,
 } from "./TransactionProvider";
 import type { TransactionStage, WriteRequest } from "../domain/types";
+import type { ActivityScope } from './activityHistory';
+const scope: ActivityScope = { account: `0x${'a'.repeat(40)}`, contractAddress: `0x${'b'.repeat(40)}`, network: 'studionet' };
+const emptyHistory = async () => [];
 
 function deferred<T>() {
   let resolve!: (value: T) => void;
@@ -45,7 +48,7 @@ describe("TransactionProvider", () => {
     };
 
     render(
-      <TransactionProvider>
+      <TransactionProvider scope={scope} loadHistory={emptyHistory}>
         <TransactionProbe request={request} />
       </TransactionProvider>,
     );
@@ -57,7 +60,7 @@ describe("TransactionProvider", () => {
     expect(await screen.findByText("FINALIZED")).toBeInTheDocument();
   });
 
-  it("records failed finality without inventing a successful stage", async () => {
+  it("records unavailable finality as unconfirmed without inventing success or chain failure", async () => {
     const user = userEvent.setup();
     const request: WriteRequest = {
       hash: "0xfailed-public-hash",
@@ -67,13 +70,13 @@ describe("TransactionProvider", () => {
     };
 
     render(
-      <TransactionProvider>
+      <TransactionProvider scope={scope} loadHistory={emptyHistory}>
         <TransactionProbe request={request} />
       </TransactionProvider>,
     );
 
     await user.click(screen.getByRole("button", { name: "Start" }));
-    expect(await screen.findByText("FAILED")).toBeInTheDocument();
+    expect(await screen.findByText("UNCONFIRMED")).toBeInTheDocument();
   });
 
   it("surfaces accepted before finalized when the real request reports both", async () => {
@@ -92,7 +95,7 @@ describe("TransactionProvider", () => {
     };
 
     render(
-      <TransactionProvider>
+      <TransactionProvider scope={scope} loadHistory={emptyHistory}>
         <TransactionProbe request={request} />
       </TransactionProvider>,
     );

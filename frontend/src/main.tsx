@@ -8,7 +8,7 @@ import { BrowserRouter } from "react-router-dom";
 import { App } from "./App";
 import { RuntimeContractAdapterProvider } from "./adapters/ContractAdapterProvider";
 import "./styles/global.css";
-import { TransactionProvider } from "./transactions/TransactionProvider";
+import { RuntimeTransactionProvider } from "./transactions/RuntimeTransactionProvider";
 import { WalletProvider } from "./wallet/WalletProvider";
 
 const rootElement = document.getElementById("root");
@@ -22,9 +22,9 @@ createRoot(rootElement).render(
     <BrowserRouter>
       <WalletProvider>
         <RuntimeContractAdapterProvider>
-          <TransactionProvider>
+          <RuntimeTransactionProvider>
             <App />
-          </TransactionProvider>
+          </RuntimeTransactionProvider>
         </RuntimeContractAdapterProvider>
       </WalletProvider>
     </BrowserRouter>

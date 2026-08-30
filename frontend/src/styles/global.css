@@ -89,6 +89,9 @@ code { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
 .scope-row { margin-top: var(--space-lg); flex-wrap: wrap; color: var(--color-muted-foreground); font-size: 0.85rem; }
 .muted-label { margin-bottom: var(--space-xs); color: var(--color-muted-foreground); font-size: 0.8rem; font-weight: 700; text-transform: uppercase; }
 .address-token, .code-block { display: block; max-width: 100%; overflow-wrap: anywhere; }
+.activity-hash { display: block; margin-block: var(--space-sm); max-width: 100%; overflow-wrap: anywhere; }
+.activity-pagination { margin-top: var(--space-lg); display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: var(--space-md); }
+.activity-notice { margin-bottom: var(--space-md); }
 .status-badge { padding: 0.3rem 0.55rem; display: inline-flex; align-items: center; gap: 0.35rem; border-radius: 999px; background: var(--color-muted); color: var(--color-foreground); font-size: 0.78rem; font-weight: 750; }
 .status-active { background: #dcfce7; color: #166534; }
 .status-denied, .status-inactive, .status-revoked { background: #fee2e2; color: #991b1b; }

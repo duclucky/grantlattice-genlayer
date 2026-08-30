@@ -1,8 +1,10 @@
 import react from "@vitejs/plugin-react";
+import { loadEnv } from 'vite';
 import { defineConfig } from "vitest/config";
+import { activityDevPlugin } from './server/activity-dev.mjs';
 
-export default defineConfig({
-  plugins: [react()],
+export default defineConfig(({ mode }) => ({
+  plugins: [react(), activityDevPlugin(loadEnv(mode, '.', ''))],
   server: {
     proxy: {
       "/api/genlayer": {
@@ -18,4 +20,4 @@ export default defineConfig({
     setupFiles: "./src/test/setup.ts",
     css: true,
   },
-});
+}));

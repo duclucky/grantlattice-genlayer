@@ -41,6 +41,8 @@ EIP-6963 wallet -> nonpayable Studionet writes -> GrantLattice contract
 same-origin /api/genlayer proxy -> canonical views -+
                                                    |
                          A2A / MCP / ADK guards <- can_invoke
+
+connected wallet -> /api/activity -> allowlisted public Studionet tx projection
 ```
 
 - One ASCII Intelligent Contract and exactly one `gl.Contract` subclass.
@@ -50,7 +52,8 @@ same-origin /api/genlayer proxy -> canonical views -+
   or semantically inconsistent validator output before hard state changes.
 - The React/Vite frontend deliberately lists detected EVM wallets, keeps wallet
   writes separate from IC reads, reports accepted/finalized/failure/retry states,
-  and reloads canonical state only after finalization.
+  reloads canonical state only after finalization, and restores the connected
+  wallet's allowlisted transaction history after a reload or return visit.
 
 The full locked specification and claim-to-code matrix are in
 [`docs/README.md`](docs/README.md).
@@ -60,7 +63,7 @@ The full locked specification and claim-to-code matrix are in
 - GenVM lint: 3 checks passed; `GrantLattice` recognized with 9 methods.
 - Python/direct/static/parser tests: 70 passed.
 - Deployment helper tests: 8 passed.
-- Frontend tests: 75 passed across 21 files, plus TypeScript and production build.
+- Frontend tests: 145 passed across 27 files, plus TypeScript and production build.
 - Studionet lifecycle: root creation, deterministic widening rejection,
   validator-controlled attenuation/expansion/ambiguity, allow, revocation, and
   descendant denial all recorded with sanitized finalized evidence. A public-ID
@@ -144,8 +147,10 @@ patterns; it does not claim external adoption.
   semantic review, and revocation browser writes remain test-backed rather than
   separately wallet-demonstrated.
 - Wallet connection only scopes the app workspace. Canonical grant state remains
-  public through contract reads, RPC, and Explorer; the UI is not a
-  confidentiality boundary.
+  public through contract reads, RPC, and Explorer, and transaction hashes are
+  public network data. Activity returns only allowlisted grant operations for
+  the connected wallet and active contract; the UI is not a confidentiality
+  boundary.
 - The actor-bound ABI and fail-closed time/validator changes are deployed and
   lifecycle-proven on Studionet. The production bundle and same-origin RPC use
   the new address; interactive browser verification is pending because the

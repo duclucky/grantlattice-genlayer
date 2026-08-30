@@ -4,7 +4,7 @@ import { MemoryRouter } from "react-router-dom";
 import { App } from "../App";
 import { ContractAdapterProvider } from "../adapters/ContractAdapterProvider";
 import type { GrantLatticeAdapter } from "../adapters/contract";
-import { TransactionProvider } from "../transactions/TransactionProvider";
+import { RuntimeTransactionProvider } from "../transactions/RuntimeTransactionProvider";
 import { WalletProvider } from "../wallet/WalletProvider";
 
 export function renderApp(route: string, adapter: GrantLatticeAdapter) {
@@ -12,9 +12,9 @@ export function renderApp(route: string, adapter: GrantLatticeAdapter) {
     <MemoryRouter initialEntries={[route]}>
       <WalletProvider>
         <ContractAdapterProvider adapter={adapter}>
-          <TransactionProvider>
+          <RuntimeTransactionProvider>
             <App />
-          </TransactionProvider>
+          </RuntimeTransactionProvider>
         </ContractAdapterProvider>
       </WalletProvider>
     </MemoryRouter>,
