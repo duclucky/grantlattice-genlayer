@@ -80,8 +80,8 @@ expect(screen.queryByText('root-a')).not.toBeInTheDocument();
 
 - [x] Read-only live endpoint lookup must recover the previously verified browser-root transaction. Log only safe status/count/match booleans or the explicitly allowlisted public transaction fields.
 - [x] Test local browser reload/reconnect/switch/logout if browser tooling works. If the known browser runtime setup failure persists, record it separately and do not claim interactive PASS.
-- [ ] Before publishing, verify intended repository root, staged/public allowlist, ignored secrets and no raw receipts. Deploy only within the user's existing authorized project workflow.
-- [ ] Check production endpoint and deployed bundle, repeat full required checks, update acceptance evidence, and report remaining uncertainty. No contract deployment or new transaction.
+- [x] Before publishing, verify intended repository root, staged/public allowlist, ignored secrets and no raw receipts. Deploy only within the user's existing authorized project workflow.
+- [x] Check production endpoint and deployed bundle, repeat full required checks, update acceptance evidence, and report remaining uncertainty. No contract deployment or new transaction.
 
 ## Self-review
 

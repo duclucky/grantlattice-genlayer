@@ -80,3 +80,38 @@ Therefore this checkpoint does not claim a fresh visual click-through with the
 OKX extension. Automated DOM/state tests and the real local HTTP path pass; a
 manual post-deployment OKX reconnect and `/activity` screenshot remain separate
 user-verifiable evidence.
+
+## Production deployment and CI
+
+The frontend was deployed to the existing authorized Vercel production project.
+No contract was redeployed and no transaction was submitted.
+
+```text
+deployment: dpl_8mENm7Fh5SDEPEWbDbG17q3wdeQr
+readyState: READY
+target: production
+alias: https://grantlattice-genlayer.vercel.app
+```
+
+The production page, API, and emitted JavaScript bundle were then checked. The
+command printed only safe booleans and counts:
+
+```json
+{"pageHttp":200,"apiHttp":200,"cacheControl":["no-store, private"],"scopeMatches":true,"activityCount":3,"containsBrowserGrant":true,"safeFieldsOnly":true,"bundleHttp":200,"bundleHasActivityEndpoint":true,"bundleHasConnectedCopy":true}
+```
+
+The first CI run exposed that `WriteJourneys.test.tsx` accidentally depended on
+the ignored local frontend environment. The test harness was corrected to inject
+an explicit synthetic activity config; with the frontend contract environment
+forced empty, the focused suite passed `6/6`, and the complete local gate passed
+again. The follow-up Windows CI for commit `88c0f50` completed successfully:
+
+```text
+CI run: 33341042264
+job: verify
+conclusion: success
+duration: 5m06s
+```
+
+CI link:
+https://github.com/duclucky/grantlattice-genlayer/actions/runs/33341042264
