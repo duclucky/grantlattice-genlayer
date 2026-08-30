@@ -713,13 +713,23 @@ async function reconcilePendingLifecycle(file, clients, deployment) {
 
 
 async function recordAccessCheck(file, clients, deployment, stage, expected) {
-  const result = await readView(clients.readClient, deployment.contractAddress, "can_invoke", [file.ids.valid, "READ", "case-1"]);
+  const result = await readView(
+    clients.readClient,
+    deployment.contractAddress,
+    "can_invoke",
+    accessCheckArgs(file, clients),
+  );
   if (result !== expected) throw new Error(`${stage} access check returned ${result}, expected ${expected}.`);
   file.accessChecks.push({ stage, grantId: file.ids.valid, capability: "READ", resource: "case-1", result, observedAt: new Date().toISOString() });
   writeJson(LIFECYCLE_PATH, file);
   return stage === "BEFORE_REVOKE"
     ? { accessBefore: result }
     : { accessAfter: result };
+}
+
+
+export function accessCheckArgs(file, clients) {
+  return [file.ids.valid, clients.principalAccount.address, "READ", "case-1"];
 }
 
 

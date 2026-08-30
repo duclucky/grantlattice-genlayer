@@ -86,7 +86,7 @@ export function DelegatePage() {
   }
 
   if (!connectedAccount) {
-    return <div className="page"><PageState headingLevel={1} title="Connect wallet to delegate">Parent authority stays hidden until you choose a wallet.</PageState></div>;
+    return <div className="page"><PageState headingLevel={1} title="Connect wallet to delegate">Wallet connection scopes this app workspace. Canonical grant state remains public onchain.</PageState></div>;
   }
   if (readState === "loading") {
     return <div className="page"><PageState headingLevel={1} title="Loading parent authority">Reading canonical parent state.</PageState></div>;

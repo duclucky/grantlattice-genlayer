@@ -29,8 +29,9 @@ agree on one of three bounded meanings:
 - `AMBIGUOUS`: meaning is not safe to settle, so the child remains inactive and retryable.
 
 Revocation or expiry of any ancestor makes descendant authority ineffective.
-Consumers call `can_invoke` immediately before an action and fail closed when
-canonical state is unavailable.
+Consumers authenticate the actor, verify that actor against the canonical
+grantee, call `can_invoke` immediately before an action, and fail closed on an
+actor mismatch, denial, or unavailable canonical state.
 
 ## Architecture
 
@@ -128,7 +129,8 @@ needed; every contract call sends `0 GEN`.
 - `get_grant(grant_id)` returns canonical grant scope, lineage, and state.
 - `get_review(grant_id)` returns the latest normalized semantic outcome.
 - `is_effective(grant_id)` derives live authority through bounded ancestry.
-- `can_invoke(grant_id, capability_id, resource_id)` returns an exact fail-closed reason.
+- `can_invoke(grant_id, actor, capability_id, resource_id)` binds the protected
+  action to the recorded grantee and returns an exact fail-closed reason.
 
 These views fit an A2A AgentSkill gateway, an MCP tool proxy, or a Google ADK
 AgentTool guard without a mirror contract. The repository documents those
@@ -139,6 +141,12 @@ patterns; it does not claim external adoption.
 - Browser-wallet proof covers one OKX-signed root creation only; child proposal,
   semantic review, and revocation browser writes remain test-backed rather than
   separately wallet-demonstrated.
+- Wallet connection only scopes the app workspace. Canonical grant state remains
+  public through contract reads, RPC, and Explorer; the UI is not a
+  confidentiality boundary.
+- The Studionet address and production evidence above predate the actor-bound
+  `can_invoke` ABI in the current source. A new deployment and browser lifecycle
+  are required before claiming the remediation on Studionet or production.
 - The validator judges authored policy meaning, not external real-world truth;
   ambiguity intentionally remains inactive and retryable.
 - V1 is bounded to 8 clauses, 16 capabilities/resources, and delegation depth 8.

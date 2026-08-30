@@ -15,12 +15,12 @@ describe("App bootstrap", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        "Grant details stay hidden until you choose a wallet.",
+        "Wallet connection scopes this app workspace. Canonical grant state remains public onchain.",
       ),
     ).toBeInTheDocument();
   });
 
-  it("keeps a level-one privacy gate on direct grant URLs before wallet connection", async () => {
+  it("keeps wallet-scoped visibility on direct grant URLs before connection", async () => {
     renderApp("/grants/root-1", unconfiguredContract);
 
     expect(
@@ -28,6 +28,11 @@ describe("App bootstrap", () => {
         level: 1,
         name: "Connect wallet to view this grant",
       }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Wallet connection scopes this app workspace. Canonical grant state remains public onchain.",
+      ),
     ).toBeInTheDocument();
   });
 });

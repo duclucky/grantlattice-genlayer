@@ -1,9 +1,10 @@
 # GrantLattice integration boundary proof
 
-Status: **PASS for the production frontend adapter and reusable read boundary;
-external protocol adoption is not claimed**
+Status: **PASS locally for the actor-bound frontend adapter and reusable read
+boundary; deployment of this remediation and external protocol adoption are not
+claimed**
 
-Date: 2026-08-24
+Date: 2026-08-31
 
 ## Boundary
 
@@ -26,27 +27,36 @@ when the upstream is unavailable.
 | Child proposal | `propose_child_grant` | parent detail/delegate form | exact sorted arguments; then canonical child read |
 | Semantic review/retry | `review_child_grant` | eligible child detail action | current state/attempt read dynamically; then review/grant reload |
 | Revocation | `revoke_grant` | eligible detail action | finalized receipt; then grant/effective reload |
-| Access guard | `can_invoke` | `/checks` | live canonical read; unavailable is never allowed |
+| Access guard | `can_invoke(grant_id, actor, capability_id, resource_id)` | `/checks` | connected wallet supplies the actor; mismatch or unavailable read is never allowed |
 
-Focused adapter tests cover raw and normalized receipt shapes, exact arguments,
+Focused adapter tests cover raw and normalized receipt shapes, exact arguments
+including the authenticated actor in the four-argument access ABI,
 SDK-normalized selected-provider writes, wrong-network/disconnected gates,
 retryable failures, and canonical reload only after successful finalization.
 Page tests cover all four write controls, submitted/accepted/finalized/failed/
-retryable language, and state-aware review loading. The project-wide gate
-reported 21 frontend files and 65 tests passed.
+retryable language, actor mismatch, wallet-scoped visibility disclaimers, and
+state-aware review loading. Fresh project-wide verification is recorded in the
+judge-remediation evidence.
 
 ## Live production proof
 
-`docs/evidence/browser/production-verification.md` records production reads,
+`docs/evidence/browser/production-verification.md` records historical production reads,
 fail-closed `ANCESTOR_INACTIVE`, real provider discovery, and the finalized
 OKX-signed root creation. The resulting active grant reloaded canonically and
 its exact `READ` / `browser-demo` access check returned `ALLOWED` with an empty
-fresh-tab Chrome warning/error log.
+fresh-tab Chrome warning/error log. That evidence predates the actor-bound ABI
+and does not prove the remediation is deployed.
 
 ## Reuse boundary
 
-A2A AgentSkill gateways, MCP tool proxies, and Google ADK AgentTool guards can
-perform a fresh `can_invoke` immediately before their distinct execution
-boundaries. The `/integrate` page documents these patterns using the same views.
-No external adapter deployment, adoption, callback, or consumer contract is
-claimed; a real protocol adapter remains Milestone headroom.
+A2A AgentSkill gateways, MCP tool proxies, and Google ADK AgentTool guards must
+authenticate their external actor, load the canonical grant, verify
+`actor == grantee`, pass that actor into a fresh `can_invoke`, and proceed only
+on `ALLOWED` immediately before their distinct execution boundaries. The
+contract comparison is defense in depth; it does not authenticate an external
+request by itself. The `/integrate` page documents these patterns using the same
+views. No external adapter deployment, adoption, callback, or consumer contract
+is claimed; a real protocol adapter remains Milestone headroom.
+
+Wallet gating is a frontend workspace feature only. Canonical grant state is
+public through contract reads, RPC, and Explorer, including after disconnect.

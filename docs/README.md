@@ -121,7 +121,7 @@ for implementation.
 | Child proposal | Active parent grantee | Delegate a strictly narrower grant | Parent actor/scope/expiry/effective state and child form rules | Real write; full finality; no value | Objective widening rejects unchanged; edit the child proposal |
 | Semantic review | Recorded child grantor | Ask validators to decide qualitative attenuation | Child status, attempt, user-facing verdict/recovery | Nondeterministic real write; full finality; no value | Invalid/ambiguous output remains inactive and retryable |
 | Protective revocation | Recorded grantor or root principal | Stop one grant and its descendant authority | Actor eligibility, current status, lineage/effective outcome | Real write; full finality; no value | Wrong actor/duplicate rejects unchanged; unavailable reads fail closed |
-| Access check | Integrator or operator | Decide whether one capability/resource may proceed | Exact grant ID, effective result, user-facing denial reason | Canonical deterministic read; no value | Read unavailable is never an allow result |
+| Access check | Authenticated grantee or integrator acting for that grantee | Decide whether one capability/resource may proceed | Exact grant ID, authenticated actor, effective result, user-facing denial reason | Canonical deterministic read; no value | Actor mismatch or unavailable read is never an allow result |
 | Disconnect | Connected user | Clear selected wallet/account and disable writes | Selected provider/account UI session only | Immediate local session action | Reconnect by deliberately selecting a provider again |
 
 ## Product/frontend blueprint
@@ -142,8 +142,9 @@ for implementation.
 2. Delegating operator: open an effective parent -> propose a narrower child ->
    correct objective widening or request semantic review -> follow
    accepted/finalized/failure/retry states -> see activation or denial history.
-3. Integrator: open Access Check -> enter an exact grant/capability/resource ->
-   read a fail-closed decision -> open the relevant integration pattern.
+3. Integrator: authenticate the acting wallet -> open Access Check -> use that
+   actor with an exact grant/capability/resource -> read a fail-closed decision
+   -> open the relevant integration pattern.
 
 ### Information architecture and route map
 
@@ -180,6 +181,12 @@ back to Grants without replacing browser back behavior.
 | Storage layout, digests, nonce keys, runner/validator configuration | `SYSTEM_ONLY` | Contract/tests/evidence | Security plumbing, not a user decision |
 | Submission scoring, reviewer notes, control prompts | `SYSTEM_ONLY` | Internal process only | Never part of the product surface |
 
+Wallet-scoped rendering is a workspace convenience, not confidentiality.
+Canonical grant IDs, grantees, scopes, lineage, expiry, status, and reviews remain
+publicly readable through contract views, RPC, and Explorer even after a user
+disconnects. Disconnect clears only the selected provider/account UI session and
+disables writes.
+
 ### UI action matrix
 
 | Visible control | Contract capability/method | Eligible role | Legal state | Input/value | Finality | Failure/recovery |
@@ -189,7 +196,7 @@ back to Grants without replacing browser back behavior.
 | Delegate child | `propose_child_grant` | Active parent grantee | Parent effective and depth available | Parent/child IDs, grantee, subset scopes, clauses, expiry, nonce; no value | Submitted -> accepted/decided -> finalized | Objective failure leaves no child; correct form and retry |
 | Request review | `review_child_grant` | Recorded child grantor | `PROPOSED` or `RETRYABLE`; unexpired chain | Child ID; no value | Nondeterministic accepted/decided -> finalized | Invalid/ambiguous output remains inactive and offers legal retry |
 | Revoke grant | `revoke_grant` | Recorded grantor or root principal | Existing, not already revoked | Grant ID and nonce; no value | Submitted -> accepted/decided -> finalized | Wrong actor/duplicate rejects unchanged; refresh canonical state |
-| Check access | `can_invoke` | Any reader/integrator | Canonical read available | Grant, capability, resource; no value | Deterministic read | Unavailable canonical read fails closed and offers retry |
+| Check access | `can_invoke` | Connected actor or integrator with an authenticated actor | Canonical read available | Grant, authenticated actor, capability, resource; no value | Deterministic read | Actor mismatch or unavailable canonical read fails closed and offers retry |
 | Open account menu | Wallet session | Connected user | Connected | No value | Immediate UI action | Menu remains keyboard dismissible |
 | Disconnect | Wallet session | Connected user | Connected | No value | Immediate UI action | Clears selected provider/account and disables writes |
 
@@ -203,6 +210,7 @@ back to Grants without replacing browser back behavior.
 | `ATTENUATED` | Safely narrowed | The finalized child becomes active after canonical reload |
 | `EXPANSION` / `DENIED` | Broader than parent | The child remains inactive; create a genuinely narrower proposal |
 | `AMBIGUOUS` / `RETRYABLE` | Needs another review | No authority was issued; eligible grantor may retry |
+| `ACTOR_MISMATCH` | Actor does not hold this grant | Do not execute; authenticate the recorded grantee or use a different grant |
 | `REVOKED` | Revoked | This grant and affected descendants cannot authorize use |
 | Derived expiry | Expired | The grant cannot authorize use; create a new bounded grant if needed |
 | `CAPABILITY_MISSING` | Capability not granted | Do not execute this action |
@@ -323,6 +331,11 @@ review. `DENIED` is terminal for that child ID; a redesigned child uses a new ID
 chain is unexpired and active.
 
 ### Temporal entrypoint rules
+
+Transaction and view time is read directly from GenLayer's deterministic
+transaction context. Missing, empty, naive, or unparsable datetime input raises
+a bounded `UserError`; the contract never substitutes epoch zero or another
+permissive fallback.
 
 | Entrypoint/view | Transaction/read-time rule | Equality semantics | Stale-phase proof |
 | --- | --- | --- | --- |
@@ -508,15 +521,18 @@ or any other consequence.
 
 ### Validator and equivalence principle
 
-The implementation uses `gl.vm.run_nondet(leader_fn, validator_fn)` per locked
-D3 in the parent workspace `docs/09-LOCKED-BUILD-DECISIONS.md`; `run_nondet_unsafe` is not a design
-choice. The custom validator:
+The implementation uses the current documented custom-validator pattern,
+`gl.vm.run_nondet_unsafe(leader_fn, validator_fn)`. This is a deliberate,
+reviewer-requested D3 migration from the older custom-validator call, not a
+blanket opt-out from consensus. The custom validator:
 
 1. returns `False` unless `leader_res` is `gl.vm.Return`;
 2. independently reruns `leader_fn`;
 3. normalizes leader and validator results against the same expected IDs,
    child ID, attempt, and fixed classes;
-4. returns `True` only when the complete normalized semantic tuples match.
+4. returns `True` only when the complete normalized semantic tuples match;
+5. catches validator-side exceptions explicitly and returns `False`, so an
+   unavailable, malformed, or failed independent evaluation cannot agree.
 
 Thus two validators must agree on the meaning/classification of every expected
 clause, not merely JSON shape. Key order and formatting are irrelevant; a
@@ -597,33 +613,40 @@ or second contract is part of the v1 public surface.
 get_grant(grant_id: str) -> Grant
 get_review(child_id: str) -> Review
 is_effective(grant_id: str) -> bool
-can_invoke(grant_id: str, capability_id: str, resource_id: str) -> str
+can_invoke(grant_id: str, actor: Address, capability_id: str, resource_id: str) -> str
 list_grant_ids(offset: u256, limit: u256) -> DynArray[str]
 ```
 
-`can_invoke` returns exactly `ALLOWED`, `GRANT_INACTIVE`, `ANCESTOR_INACTIVE`,
-`EXPIRED`, `CAPABILITY_MISSING`, or `RESOURCE_MISSING`. Missing grants return
-`GRANT_INACTIVE`; an unavailable RPC is a frontend/integrator error and must not
-be converted to an onchain `ALLOWED` value.
+`can_invoke` returns exactly `ALLOWED`, `GRANT_INACTIVE`, `ACTOR_MISMATCH`,
+`ANCESTOR_INACTIVE`, `EXPIRED`, `CAPABILITY_MISSING`, or `RESOURCE_MISSING`.
+Missing grants return `GRANT_INACTIVE`; a supplied actor other than the recorded
+grantee returns `ACTOR_MISMATCH`. An unavailable RPC is a frontend/integrator
+error and must not be converted to an onchain `ALLOWED` value.
 
 `get_grant` and `get_review` raise a bounded not-found `UserError`; the frontend
 adapter maps only that known absence to `null` and treats transport/unknown errors
 as unavailable. `list_grant_ids` requires `1 <= limit <= 25`, returns IDs from the
 append-only canonical index starting at `offset`, and never invents records. The
 adapter fetches each returned record through `get_grant`; optional account
-filtering is presentation over canonical records, not authority.
+filtering is presentation over canonical public records, not authority or
+confidentiality.
 
 `can_invoke` reason precedence is locked: missing/non-`ACTIVE` target ->
-`GRANT_INACTIVE`; own expiry -> `EXPIRED`; inactive/expired ancestor ->
-`ANCESTOR_INACTIVE`; missing capability -> `CAPABILITY_MISSING`; missing resource
--> `RESOURCE_MISSING`; otherwise `ALLOWED`.
+`GRANT_INACTIVE`; actor differs from recorded grantee -> `ACTOR_MISMATCH`; own
+expiry -> `EXPIRED`; inactive/expired ancestor -> `ANCESTOR_INACTIVE`; missing
+capability -> `CAPABILITY_MISSING`; missing resource -> `RESOURCE_MISSING`;
+otherwise `ALLOWED`.
 
 ### Consumer/callback boundary
 
-V1 has no callback and no separate consumer contract. Consumers perform a fresh
-public read immediately before the protected action and fail closed if the read
-is unavailable or not `ALLOWED`. Because no contract-to-contract delivery is
-claimed, callback sender authentication and delivery idempotency are `N/A`.
+V1 has no callback and no separate consumer contract. Before every protected
+action, a consumer must authenticate the external actor, load the canonical
+grant, verify `actor == grantee`, pass that same actor into a fresh `can_invoke`
+read, and proceed only on `ALLOWED`. It must fail closed on actor mismatch,
+denial, or unavailable reads. The contract-side actor comparison is defense in
+depth; it does not authenticate an external HTTP, A2A, MCP, or ADK caller by
+itself. Because no contract-to-contract delivery is claimed, callback sender
+authentication and delivery idempotency are `N/A`.
 Milestone adapters may add real A2A/MCP/ADK execution boundaries without changing
 the canonical grant interface.
 
@@ -631,21 +654,23 @@ the canonical grant interface.
 
 | Consumer | Structurally different workflow | Canonical read boundary | Output needed | V1 claim |
 | --- | --- | --- | --- | --- |
-| A2A AgentSkill gateway | A parent delegates a cross-agent task before another agent executes a skill | Check `can_invoke` immediately before `AgentSkill.execute` | `ALLOWED` or exact fail-closed reason plus effective lineage state | Interface documented; external execution adapter is milestone work |
-| MCP tool proxy | A caller invokes a protected server tool over `tools/call` | Check `can_invoke` before forwarding the tool request | Canonical allow/deny for grant, tool capability, and resource | Interface documented; no production MCP enforcement claim |
-| Google ADK AgentTool guard | An orchestrator invokes an agent as an in-process tool | Check `is_effective`/`can_invoke` in the pre-execution guard | Effective authority and exact denial reason | Interface documented; no ADK integration/adoption claim |
+| A2A AgentSkill gateway | A parent delegates a cross-agent task before another agent executes a skill | Authenticate actor, match canonical grantee, then call `can_invoke(grant_id, actor, ...)` immediately before `AgentSkill.execute` | `ALLOWED` or exact fail-closed reason plus effective lineage state | Interface documented; external execution adapter is milestone work |
+| MCP tool proxy | A caller invokes a protected server tool over `tools/call` | Authenticate actor, match canonical grantee, then call actor-bound `can_invoke` before forwarding | Canonical actor/scope allow or exact denial | Interface documented; no production MCP enforcement claim |
+| Google ADK AgentTool guard | An orchestrator invokes an agent as an in-process tool | Authenticate actor, match canonical grantee, then call `is_effective`/actor-bound `can_invoke` in the pre-execution guard | Effective authority and exact denial reason | Interface documented; no ADK integration/adoption claim |
 
 ## Threat model
 
 | Threat/adversary goal | Preventive control | Fail-closed result | Required proof |
 | --- | --- | --- | --- |
 | Unauthorized caller creates/reviews/revokes for another actor | Authenticated sender matched to stored role; no actor from prose | Revert unchanged | Wrong caller for every write; maps/status/accounting unchanged |
+| Public grant ID is replayed by someone other than its grantee | Consumer authenticates the external actor; contract compares supplied actor to canonical grantee | `ACTOR_MISMATCH`; protected action denied | Direct, adapter, page, and deployment-helper tests bind actor in the four-argument ABI |
 | Replay or duplicate overwrites state | Stable unique IDs, caller/method nonce keys, terminal-state guards | Revert unchanged | Duplicate ID, nonce, review, revoke, and cross-method/cross-caller cases |
 | Child widens objective scopes | Canonical sorted CSV and deterministic subset/depth/time checks before storage | Child absent | Extra capability/resource, later expiry, depth overflow, malformed/noncanonical CSV |
 | Child drops or changes a parent qualitative rule | Exact equal clause-ID set and fixed kind before semantic review | Proposal rejects | Missing/extra/duplicate ID and kind mismatch |
 | Prompt injection redefines authority/output/consequence | Quoted untrusted clause data; fixed schema/IDs/classes; code-derived status | Inactive retry or unchanged | Clause text instructs payout/authority/schema override; no hard-state effect |
 | Malicious leader returns valid JSON with unsafe meaning/coverage | Independent semantic validator plus deterministic settlement invariants | Inactive retry or unchanged | Wrong child/attempt, extra/missing/duplicate ID, invalid enum, semantic disagreement |
-| Validator/source unavailable or disagrees | `gl.vm.run_nondet` consensus; no optimistic state | Transaction failure or `RETRYABLE`; never active | Mock timeout/error/rollback/disagreement and canonical state unchanged |
+| Validator/source unavailable, throws, or disagrees | `gl.vm.run_nondet_unsafe` custom validator with explicit exception-to-`False`; no optimistic state | Transaction failure or `RETRYABLE`; never active | Mock timeout/error/rollback/validator exception/disagreement and canonical state unchanged |
+| Transaction datetime is missing or malformed | Direct deterministic context read with strict timezone-aware parsing; no zero fallback | `UserError`; no allow result or mutation | Missing/empty/naive/unparsable time with canonical state unchanged |
 | Stale stored `ACTIVE` bypasses expiry/revoke | Every time-dependent write and view walks live bounded ancestry/time | Denied | Boundary -1/equal/+1 with stale phase; revoked/expired ancestor denial |
 | Revocation mutates only part of a subtree | Descendant ineffectiveness is derived, not batch-written | Complete fail-closed cascade | Deep descendant plus unrelated-tree isolation |
 | Consumer fails open on RPC error | Adapter exceptions map to unavailable; no local authority cache | Protected action denied | Frontend/integration unavailable-read test; no `ALLOWED` display |
@@ -677,7 +702,8 @@ the canonical grant interface.
 - Each time-bounded public write at boundary -1, exact boundary, and boundary +1
   while stored phase stays stale; canonical state and accounting unchanged.
 - Root, child, and ancestor expiry/revocation; deepest allowed ancestry;
-  unrelated-tree isolation; all `can_invoke` reasons and precedence.
+  unrelated-tree isolation; all `can_invoke` reasons and precedence, including
+  public-ID replay by the wrong actor.
 - Non-payable metadata for every write and zero contract accounting throughout.
 
 ### Nondeterministic and adversarial tests
@@ -697,7 +723,8 @@ the canonical grant interface.
   unavailable, transaction lifecycle, and reload only after finalization.
 - EIP-6963 plus injected provider fallback/deduplication; deliberate selection;
   network switch/add; modal focus/Escape; account menu and disconnect cleanup.
-- Real wrapper argument mapping, no write while disconnected/wrong network, role/
+- Real wrapper argument mapping including authenticated actor, no access check or
+  write while disconnected/wrong network, role/
   state action visibility, raw and normalized receipt parsing, retry ID read from
   current canonical state, and post-finalization reload.
 - Axe, reduced motion, keyboard focus, 360/768/1024/1440 overflow, browser console,
@@ -721,8 +748,8 @@ the canonical grant interface.
 | A child cannot exceed deterministic parent scope | `propose_child_grant`: absent -> `PROPOSED` after subset/depth/time/clause checks | `get_grant`, `is_effective` | Wider cap/resource/time/depth, clause mismatch, wrong actor/state | Delegate form parent gate/validation/finality tests | `docs/evidence/studionet/lifecycle.json` (`PROVE_OBJECTIVE_REJECTION`, `PROPOSE_VALID`) | Local + Studionet PASS; browser wrapper/tests PASS |
 | Only validator-agreed qualitative attenuation activates a child | `review_child_grant`: `PROPOSED/RETRYABLE -> ACTIVE/DENIED/RETRYABLE` | `get_review`, `get_grant`, `is_effective` | Semantic replay, malicious leader/validator outputs, total coverage/invariant tests | Review/retry control, stages, canonical reload | `docs/evidence/studionet/lifecycle.json` (three review outcomes) | Local + Studionet PASS; browser wrapper/tests PASS |
 | Revocation/expiry fail-closes every descendant without partial cascade | `revoke_grant`: target -> `REVOKED`; descendant result derived | `is_effective`, `can_invoke`, `get_grant` | Deep chain, expired revoke, wrong actor, unrelated tree, no double revoke | Eligible revoke control and descendant refresh | `docs/evidence/studionet/lifecycle.json` (`REVOKE_ROOT`) | Local + Studionet PASS; browser wrapper/tests PASS |
-| Exact protected actions fail closed | No write; live bounded chain/scope evaluation | `can_invoke` exact reason | All reason enums, boundary equality, missing grant, stale phase | `/checks` allowed/denied/unavailable tests | `docs/evidence/studionet/lifecycle.json` (`ALLOWED -> ANCESTOR_INACTIVE`); `docs/evidence/browser/production-verification.md` | Local + Studionet + production browser PASS |
-| Browser users choose a wallet and see only real lifecycle state | Wallet/network session plus adapter writes; no simulated state | Fresh contract reads after `FINALIZED` | Provider/network/receipt parser tests | Picker, account menu, disconnect, Activity, reload tests | `docs/evidence/frontend/phase-7-real-adapter.md`; `docs/evidence/browser/wallet-lifecycle.md` | Production reads, provider choice, OKX root finality, and reload PASS |
+| Exact protected actions bind the authenticated actor and fail closed | No write; actor equality plus live bounded chain/scope evaluation | `can_invoke` exact reason | Actor mismatch, all reason enums, invalid time, boundary equality, missing grant, stale phase | `/checks` connected-actor, mismatch, allowed/denied/unavailable tests | Prior three-argument Studionet/browser proof remains historical; a remediated deployment is pending | Remediated source/local tests PASS; new Studionet/browser proof pending |
+| Browser users choose a wallet and see only real lifecycle state; wallet filtering is not confidentiality | Wallet/network session plus adapter writes; no simulated state | Fresh public contract reads after `FINALIZED` | Provider/network/receipt parser tests | Picker, account menu, disconnect, public-state disclaimer, Activity, reload tests | Existing wallet lifecycle evidence covers the prior deployed revision | Production reads/provider choice/OKX root finality PASS on prior revision; remediated deployment pending |
 | One interface is reusable at three distinct execution boundaries | Same views; no consumer mirror contract | `is_effective`, `can_invoke` | Adapter examples and fail-closed wrapper tests | `/integrate` patterns and honesty disclaimer | `docs/evidence/frontend/phase-7-real-adapter.md` | Real adapter PASS; external adoption not claimed |
 
 ## Analogue and differentiation matrix

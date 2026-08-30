@@ -26,6 +26,10 @@ export function HelpPage() {
         <summary>What if the canonical read is unavailable?</summary>
         <p>The product fails closed, explains that authority could not be verified, and offers a read retry.</p>
       </details>
+      <details>
+        <summary>Does connecting a wallet make grant data private?</summary>
+        <p>No. Wallet connection only scopes what this app displays. Canonical grant state remains public through contract reads, RPC, and Explorer.</p>
+      </details>
     </div>
   );
 }

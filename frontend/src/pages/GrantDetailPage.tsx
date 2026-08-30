@@ -73,7 +73,7 @@ export function GrantDetailPage() {
     return (
       <div className="page">
         <PageState headingLevel={1} title="Connect wallet to view this grant">
-          Grant details stay hidden until you choose a wallet.
+          Wallet connection scopes this app workspace. Canonical grant state remains public onchain.
         </PageState>
       </div>
     );

@@ -63,7 +63,7 @@ export function GrantsPage() {
 
       {!account ? (
         <PageState title="Connect wallet to view your grants">
-          Grant details stay hidden until you choose a wallet.
+          Wallet connection scopes this app workspace. Canonical grant state remains public onchain.
         </PageState>
       ) : (
         <>

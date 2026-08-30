@@ -45,4 +45,21 @@ describe("product routes", () => {
       }),
     ).toBeInTheDocument();
   });
+
+  it("states the authenticated actor requirement at the integration boundary", async () => {
+    renderApp("/integrate", canonicalTestAdapter);
+
+    expect(await screen.findByText(
+      "Consumers must authenticate the actor before calling can_invoke.",
+    )).toBeInTheDocument();
+    expect(screen.getAllByText(/can_invoke\(grant_id, actor,/u)).toHaveLength(2);
+  });
+
+  it("states that wallet workspace filtering is not confidentiality", async () => {
+    renderApp("/help", canonicalTestAdapter);
+
+    expect(await screen.findByText(
+      "No. Wallet connection only scopes what this app displays. Canonical grant state remains public through contract reads, RPC, and Explorer.",
+    )).toBeInTheDocument();
+  });
 });

@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  accessCheckArgs,
   delegateFundingDecision,
   deploymentDecision,
   isExpectedRejectedReceipt,
@@ -10,6 +11,22 @@ import {
   safeReceiptProjection,
   selectNextLifecycleAction,
 } from "../../scripts/studionet.mjs";
+
+
+test("access checks bind the protected action to the recorded child grantee", () => {
+  assert.deepEqual(
+    accessCheckArgs(
+      { ids: { valid: "grantlattice-valid-v2" } },
+      { principalAccount: { address: "0x1111111111111111111111111111111111111111" } },
+    ),
+    [
+      "grantlattice-valid-v2",
+      "0x1111111111111111111111111111111111111111",
+      "READ",
+      "case-1",
+    ],
+  );
+});
 
 
 test("safe receipt projection excludes validator-private and raw payload fields", () => {

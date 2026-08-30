@@ -51,6 +51,9 @@ describe("GrantsPage", () => {
     renderConnectedHarness({ ...canonicalTestAdapter, listGrants });
 
     expect(await screen.findByText("Connect wallet to view your grants")).toBeInTheDocument();
+    expect(screen.getByText(
+      "Wallet connection scopes this app workspace. Canonical grant state remains public onchain.",
+    )).toBeInTheDocument();
     expect(screen.queryByText("root-1")).not.toBeInTheDocument();
     expect(listGrants).not.toHaveBeenCalled();
   });
