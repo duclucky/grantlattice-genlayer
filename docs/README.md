@@ -749,7 +749,7 @@ the canonical grant interface.
 | Only validator-agreed qualitative attenuation activates a child | `review_child_grant`: `PROPOSED/RETRYABLE -> ACTIVE/DENIED/RETRYABLE` | `get_review`, `get_grant`, `is_effective` | Semantic replay, malicious leader/validator outputs, total coverage/invariant tests | Review/retry control, stages, canonical reload | `docs/evidence/studionet/lifecycle.json` (three review outcomes) | Local + Studionet PASS; browser wrapper/tests PASS |
 | Revocation/expiry fail-closes every descendant without partial cascade | `revoke_grant`: target -> `REVOKED`; descendant result derived | `is_effective`, `can_invoke`, `get_grant` | Deep chain, expired revoke, wrong actor, unrelated tree, no double revoke | Eligible revoke control and descendant refresh | `docs/evidence/studionet/lifecycle.json` (`REVOKE_ROOT`) | Local + Studionet PASS; browser wrapper/tests PASS |
 | Exact protected actions bind the authenticated actor and fail closed | No write; actor equality plus live bounded chain/scope evaluation | `can_invoke` exact reason | Actor mismatch, all reason enums, invalid time, boundary equality, missing grant, stale phase | `/checks` connected-actor, mismatch, allowed/denied/unavailable tests | `docs/evidence/studionet/judge-remediation-verification.md` records `ALLOWED`, `ACTOR_MISMATCH`, and post-revoke `ANCESTOR_INACTIVE` | Remediated source/local + Studionet PASS; production browser proof pending |
-| Browser users choose a wallet and see only real lifecycle state; wallet filtering is not confidentiality | Wallet/network session plus adapter writes; no simulated state | Fresh public contract reads after `FINALIZED` | Provider/network/receipt parser tests | Picker, account menu, disconnect, public-state disclaimer, Activity, reload tests | Existing wallet lifecycle evidence covers the prior deployed revision | Production reads/provider choice/OKX root finality PASS on prior revision; remediated production deploy pending |
+| Browser users choose a wallet and see only real lifecycle state; wallet filtering is not confidentiality | Wallet/network session plus adapter writes; no simulated state | Fresh public contract reads after `FINALIZED` | Provider/network/receipt parser tests | Picker, account menu, disconnect, public-state disclaimer, Activity, reload tests | `docs/evidence/frontend/judge-remediation-production.md`; prior wallet lifecycle evidence remains revision-specific | Remediated production bundle/proxy PASS; interactive browser verification pending due tooling blocker |
 | One interface is reusable at three distinct execution boundaries | Same views; no consumer mirror contract | `is_effective`, `can_invoke` | Adapter examples and fail-closed wrapper tests | `/integrate` patterns and honesty disclaimer | `docs/evidence/frontend/phase-7-real-adapter.md` | Real adapter PASS; external adoption not claimed |
 
 ## Analogue and differentiation matrix
@@ -806,6 +806,7 @@ Evidence and remaining targets:
 - `docs/evidence/integration/adapter-proof.md`
 - `docs/evidence/contract/judge-remediation-local-verification.md`
 - `docs/evidence/studionet/judge-remediation-verification.md`
+- `docs/evidence/frontend/judge-remediation-production.md`
 
 ## Definition of Done
 

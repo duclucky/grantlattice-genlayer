@@ -1,6 +1,6 @@
 # Judge remediation Studionet verification
 
-Status: **PASS ON STUDIONET; PRODUCTION BROWSER UPDATE PENDING**
+Status: **PASS ON STUDIONET**
 
 Date: 2026-08-31
 
@@ -89,7 +89,6 @@ No private key, complete RPC receipt, trace, validator configuration,
 
 ## Honest boundary
 
-This is script-signed Studionet and canonical read evidence. It is not proof that
-the Vercel production app is already configured for this address, nor a new
-browser-wallet write. Those claims remain pending until the production frontend
-is updated and verified independently.
+This is script-signed Studionet and canonical read evidence. It is not a new
+browser-wallet write. Production deployment evidence is recorded independently
+in `docs/evidence/frontend/judge-remediation-production.md`.

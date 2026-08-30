@@ -77,7 +77,7 @@ See [`docs/evidence`](docs/evidence) for current command output, safe receipt
 projections, canonical reads, and honest evidence boundaries.
 
 - Public repository: [`duclucky/grantlattice-genlayer`](https://github.com/duclucky/grantlattice-genlayer)
-- Successful CI: [Windows verification run 32703854895](https://github.com/duclucky/grantlattice-genlayer/actions/runs/32703854895)
+- Successful CI: [Windows verification run 33337312596](https://github.com/duclucky/grantlattice-genlayer/actions/runs/33337312596)
 
 ## Run Locally
 
@@ -147,8 +147,9 @@ patterns; it does not claim external adoption.
   public through contract reads, RPC, and Explorer; the UI is not a
   confidentiality boundary.
 - The actor-bound ABI and fail-closed time/validator changes are deployed and
-  lifecycle-proven on Studionet. Production browser verification for this new
-  address remains pending until the frontend deployment is updated.
+  lifecycle-proven on Studionet. The production bundle and same-origin RPC use
+  the new address; interactive browser verification is pending because the
+  browser-control backend was unavailable during final verification.
 - The validator judges authored policy meaning, not external real-world truth;
   ambiguity intentionally remains inactive and retryable.
 - V1 is bounded to 8 clauses, 16 capabilities/resources, and delegation depth 8.
