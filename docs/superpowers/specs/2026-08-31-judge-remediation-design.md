@@ -2,7 +2,7 @@
 
 Date: 2026-08-31
 
-Status: approved direction; written-spec review pending
+Status: approved by user on 2026-08-31
 
 ## Goal
 
