@@ -28,6 +28,12 @@ function finalized(hash: string) {
   };
 }
 
+const activityConfig = {
+  contractAddress: `0x${"b".repeat(40)}` as Address,
+  icRpcPath: "/api/genlayer",
+  network: "studionet" as const,
+};
+
 function setup(route: string, account: Address, adapter: GrantLatticeAdapter) {
   const request = vi.fn(async ({ method }: { method: string }) =>
     method === "eth_requestAccounts" ? [account] : null,
@@ -44,7 +50,7 @@ function setup(route: string, account: Address, adapter: GrantLatticeAdapter) {
     <MemoryRouter initialEntries={[route]}>
       <WalletProvider discover={async () => [info]}>
         <ContractAdapterProvider adapter={adapter}>
-          <RuntimeTransactionProvider loadHistory={async () => []}>
+          <RuntimeTransactionProvider config={activityConfig} loadHistory={async () => []}>
             <App />
           </RuntimeTransactionProvider>
         </ContractAdapterProvider>
