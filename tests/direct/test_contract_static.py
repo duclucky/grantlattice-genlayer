@@ -85,6 +85,12 @@ def test_semantic_review_uses_locked_safe_nondeterminism_api():
     assert "isinstance(leader_result, gl.vm.Return)" in text
 
 
+def test_transaction_time_has_no_zero_fallback_and_requires_raw_datetime():
+    text = source()
+    assert "return bigint(0)" not in text
+    assert 'gl.message_raw["datetime"]' in text
+
+
 def test_all_four_writes_are_public_and_none_is_payable():
     tree = ast.parse(source())
     contract = next(

@@ -1,7 +1,7 @@
 # { "Depends": "py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6" }
 
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime
 import json
 from genlayer import *
 
@@ -653,23 +653,20 @@ class GrantLattice(gl.Contract):
 
     def _now(self) -> bigint:
         try:
-            raw = gl.message_raw.get("datetime", "")
+            raw = gl.message_raw["datetime"]
         except Exception:
-            try:
-                raw = gl.message.datetime
-            except Exception:
-                return bigint(0)
-        raw_text = str(raw)
-        if raw_text.isdigit():
-            return bigint(int(raw_text))
+            raise gl.vm.UserError("transaction datetime unavailable")
+        if not isinstance(raw, str) or raw.strip() == "":
+            raise gl.vm.UserError("transaction datetime unavailable")
+        raw_text = raw.strip()
         try:
             normalized = raw_text[:-1] + "+00:00" if raw_text.endswith("Z") else raw_text
             parsed = datetime.fromisoformat(normalized)
-            if parsed.tzinfo is None:
-                parsed = parsed.replace(tzinfo=timezone.utc)
+            if parsed.tzinfo is None or parsed.utcoffset() is None:
+                raise ValueError("timezone required")
             return bigint(int(parsed.timestamp()))
         except Exception:
-            return bigint(0)
+            raise gl.vm.UserError("transaction datetime invalid")
 
     def _is_alphanumeric(self, char: str) -> bool:
         return (

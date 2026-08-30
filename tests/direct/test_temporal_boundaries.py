@@ -1,10 +1,17 @@
 from __future__ import annotations
 
+import sys
+
 import pytest
 
 from tests.direct.conftest import NOW, clauses, create_root, set_time
 from tests.direct.test_child_grants import propose_child
 from tests.direct.test_review import install_review, review_output
+
+
+def set_raw_datetime(vm, value) -> None:
+    vm.warp(value)
+    sys.modules["genlayer.gl"].message_raw["datetime"] = value
 
 
 @pytest.mark.parametrize("clock_offset, succeeds", [(-1, True), (0, False), (1, False)])
@@ -124,3 +131,47 @@ def test_review_checks_child_boundary_and_rejected_attempt_is_absent(
         assert contract.get_grant("child-1").status == "PROPOSED"
         with direct_vm.expect_revert("unknown review"):
             contract.get_review("child-1")
+
+
+@pytest.mark.parametrize(
+    "invalid_datetime",
+    [None, "", "2030-01-01T00:00:00", "not-a-transaction-time"],
+)
+def test_create_root_rejects_unavailable_or_invalid_transaction_datetime_without_state(
+    contract,
+    direct_vm,
+    direct_alice,
+    direct_bob,
+    invalid_datetime,
+):
+    direct_vm.sender = direct_alice
+    set_raw_datetime(direct_vm, invalid_datetime)
+    try:
+        with direct_vm.expect_revert("transaction datetime"):
+            contract.create_root_grant(
+                "root-invalid-time",
+                direct_bob,
+                "READ",
+                "case-1",
+                clauses(),
+                NOW + 1_000,
+                2,
+                "invalid-time-nonce",
+            )
+    finally:
+        set_time(direct_vm, NOW)
+
+    with direct_vm.expect_revert("unknown grant"):
+        contract.get_grant("root-invalid-time")
+
+
+def test_can_invoke_never_allows_when_transaction_datetime_is_invalid(
+    contract, direct_vm, direct_alice, direct_bob
+):
+    create_root(contract, direct_vm, direct_alice, direct_bob)
+    set_raw_datetime(direct_vm, "not-a-transaction-time")
+    try:
+        with direct_vm.expect_revert("transaction datetime invalid"):
+            contract.can_invoke("root-1", direct_bob, "READ", "case-1")
+    finally:
+        set_time(direct_vm, NOW)
