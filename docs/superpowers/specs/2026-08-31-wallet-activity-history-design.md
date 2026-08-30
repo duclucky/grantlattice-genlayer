@@ -2,7 +2,7 @@
 
 Date: 2026-08-31
 
-Status: conversational design approved; written specification awaiting review.
+Status: conversational design and written specification approved by the user.
 
 ## Outcome
 
