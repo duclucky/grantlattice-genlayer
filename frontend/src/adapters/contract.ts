@@ -14,6 +14,7 @@ export interface GrantLatticeAdapter {
   getReview(grantId: string): Promise<ReviewRecord | null>;
   canInvoke(
     grantId: string,
+    actor: Address,
     capabilityId: string,
     resourceId: string,
   ): Promise<AccessDecision>;

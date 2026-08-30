@@ -115,6 +115,20 @@ describe("createGenLayerAdapter", () => {
     ]);
   });
 
+  it("passes the authenticated actor in the canonical can_invoke ABI order", async () => {
+    const { readClient, readContract, walletSession } = fixture();
+    const adapter = createGenLayerAdapter(readClient, walletSession, config);
+
+    await adapter.canInvoke("root-1", grantee, "READ", "case-1");
+
+    expect(readContract).toHaveBeenCalledWith({
+      address: contractAddress,
+      functionName: "can_invoke",
+      args: ["root-1", grantee, "READ", "case-1"],
+      jsonSafeReturn: true,
+    });
+  });
+
   it("encodes exact sorted arguments, sends 0 GEN, and reloads only after finalized", async () => {
     const { events, readClient, walletSession, writeContract } = fixture();
     const adapter = createGenLayerAdapter(readClient, walletSession, config);
@@ -175,7 +189,7 @@ describe("createGenLayerAdapter", () => {
     const { readClient, walletSession } = fixture();
     readClient.readContract = vi.fn(async () => { throw new Error("Failed to fetch"); });
     const unavailable = createGenLayerAdapter(readClient, walletSession, config);
-    await expect(unavailable.canInvoke("root-1", "READ", "case-1")).rejects.toThrow("Failed to fetch");
+    await expect(unavailable.canInvoke("root-1", grantee, "READ", "case-1")).rejects.toThrow("Failed to fetch");
 
     const disconnected = createGenLayerAdapter(
       readClient,

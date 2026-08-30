@@ -100,10 +100,13 @@ export const canonicalTestAdapter: GrantLatticeAdapter = {
   async getReview(grantId) {
     return grantId === childReview.childGrantId ? { ...childReview } : null;
   },
-  async canInvoke(grantId, capabilityId, resourceId): Promise<AccessDecision> {
+  async canInvoke(grantId, actor, capabilityId, resourceId): Promise<AccessDecision> {
     const grant = grants.find((item) => item.grantId === grantId);
     if (!grant?.effective) {
       return { allowed: false, reason: "GRANT_INACTIVE" };
+    }
+    if (actor.toLowerCase() !== grant.grantee.toLowerCase()) {
+      return { allowed: false, reason: "ACTOR_MISMATCH" };
     }
     if (!grant.capabilities.includes(capabilityId)) {
       return { allowed: false, reason: "CAPABILITY_MISSING" };

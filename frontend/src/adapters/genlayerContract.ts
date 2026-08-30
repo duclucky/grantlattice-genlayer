@@ -76,6 +76,7 @@ const REVIEW_VERDICTS = new Set<ReviewVerdict>([
 const ACCESS_REASONS = new Set<AccessReason>([
   "ALLOWED",
   "GRANT_INACTIVE",
+  "ACTOR_MISMATCH",
   "ANCESTOR_INACTIVE",
   "EXPIRED",
   "CAPABILITY_MISSING",
@@ -359,8 +360,8 @@ export function createGenLayerAdapter(
     },
     getGrant,
     getReview,
-    async canInvoke(grantId, capabilityId, resourceId): Promise<AccessDecision> {
-      const value = await read("can_invoke", [grantId, capabilityId, resourceId]);
+    async canInvoke(grantId, actor, capabilityId, resourceId): Promise<AccessDecision> {
+      const value = await read("can_invoke", [grantId, actor, capabilityId, resourceId]);
       if (typeof value !== "string" || !ACCESS_REASONS.has(value as AccessReason)) {
         throw new Error("Canonical access result is invalid.");
       }

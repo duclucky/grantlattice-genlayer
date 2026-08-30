@@ -56,6 +56,7 @@ export interface ReviewRecord {
 export type AccessReason =
   | "ALLOWED"
   | "GRANT_INACTIVE"
+  | "ACTOR_MISMATCH"
   | "ANCESTOR_INACTIVE"
   | "EXPIRED"
   | "CAPABILITY_MISSING"

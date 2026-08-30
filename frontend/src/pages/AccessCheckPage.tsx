@@ -2,10 +2,13 @@ import { ShieldCheckIcon } from "@phosphor-icons/react";
 import { type FormEvent, useState } from "react";
 
 import { useContractAdapter } from "../adapters/ContractAdapterProvider";
-import type { AccessDecision } from "../domain/types";
+import type { AccessDecision, Address } from "../domain/types";
+import { useWallet } from "../wallet/WalletProvider";
 
 export function AccessCheckPage() {
   const adapter = useContractAdapter();
+  const wallet = useWallet();
+  const actor = wallet.account as Address | null;
   const [decision, setDecision] = useState<AccessDecision | null>(null);
   const [readFailed, setReadFailed] = useState(false);
 
@@ -14,9 +17,11 @@ export function AccessCheckPage() {
     const data = new FormData(event.currentTarget);
     setReadFailed(false);
     setDecision(null);
+    if (!actor) return;
     try {
       const result = await adapter.canInvoke(
         String(data.get("grantId")),
+        actor,
         String(data.get("capabilityId")),
         String(data.get("resourceId")),
       );
@@ -37,7 +42,12 @@ export function AccessCheckPage() {
         <label>Grant ID<input name="grantId" required /></label>
         <label>Capability ID<input name="capabilityId" required /></label>
         <label>Resource ID<input name="resourceId" required /></label>
-        <button className="button button-primary" type="submit">
+        <p className="form-note">
+          {actor
+            ? <>Actor from connected wallet: <code>{actor}</code></>
+            : "Connect a wallet to identify the actor."}
+        </p>
+        <button className="button button-primary" disabled={!actor} type="submit">
           <ShieldCheckIcon aria-hidden="true" size={18} weight="bold" />
           Check canonical authority
         </button>

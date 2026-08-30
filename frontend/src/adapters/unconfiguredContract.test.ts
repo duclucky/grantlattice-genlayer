@@ -44,7 +44,7 @@ describe("unconfiguredContract", () => {
       unconfiguredContract.listGrants(address),
       unconfiguredContract.getGrant("grant-1"),
       unconfiguredContract.getReview("grant-1"),
-      unconfiguredContract.canInvoke("grant-1", "READ", "case-1"),
+      unconfiguredContract.canInvoke("grant-1", address, "READ", "case-1"),
       unconfiguredContract.createRoot(rootInput),
       unconfiguredContract.proposeChild(childInput),
       unconfiguredContract.reviewChild("child-1"),
