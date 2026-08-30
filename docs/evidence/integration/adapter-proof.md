@@ -1,8 +1,8 @@
 # GrantLattice integration boundary proof
 
-Status: **PASS locally for the actor-bound frontend adapter and reusable read
-boundary; deployment of this remediation and external protocol adoption are not
-claimed**
+Status: **PASS locally and on Studionet for the actor-bound reusable read
+boundary; remediated production browser deployment and external protocol
+adoption are not claimed**
 
 Date: 2026-08-31
 
@@ -60,3 +60,8 @@ is claimed; a real protocol adapter remains Milestone headroom.
 
 Wallet gating is a frontend workspace feature only. Canonical grant state is
 public through contract reads, RPC, and Explorer, including after disconnect.
+
+`docs/evidence/studionet/judge-remediation-verification.md` records the current
+four-argument ABI returning `ALLOWED` for the recorded grantee,
+`ACTOR_MISMATCH` for the other public actor, and `ANCESTOR_INACTIVE` after root
+revocation.

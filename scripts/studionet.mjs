@@ -712,15 +712,16 @@ async function reconcilePendingLifecycle(file, clients, deployment) {
 }
 
 
-async function recordAccessCheck(file, clients, deployment, stage, expected) {
+async function recordAccessCheck(file, clients, deployment, stage, expected, actor = "principal") {
+  const args = accessCheckArgs(file, clients, actor);
   const result = await readView(
     clients.readClient,
     deployment.contractAddress,
     "can_invoke",
-    accessCheckArgs(file, clients),
+    args,
   );
   if (result !== expected) throw new Error(`${stage} access check returned ${result}, expected ${expected}.`);
-  file.accessChecks.push({ stage, grantId: file.ids.valid, capability: "READ", resource: "case-1", result, observedAt: new Date().toISOString() });
+  file.accessChecks.push({ stage, grantId: file.ids.valid, actor: args[1], capability: "READ", resource: "case-1", result, observedAt: new Date().toISOString() });
   writeJson(LIFECYCLE_PATH, file);
   return stage === "BEFORE_REVOKE"
     ? { accessBefore: result }
@@ -728,8 +729,10 @@ async function recordAccessCheck(file, clients, deployment, stage, expected) {
 }
 
 
-export function accessCheckArgs(file, clients) {
-  return [file.ids.valid, clients.principalAccount.address, "READ", "case-1"];
+export function accessCheckArgs(file, clients, actor = "principal") {
+  const account = actor === "principal" ? clients.principalAccount : clients.delegateAccount;
+  if (!account?.address) throw new Error("Access-check actor is unavailable.");
+  return [file.ids.valid, account.address, "READ", "case-1"];
 }
 
 
@@ -783,6 +786,9 @@ async function lifecycle() {
     const action = selectNextLifecycleAction(state);
     if (action === "COMPLETE") {
       assertFinalLifecycle(state);
+      if (!file.accessChecks.some((check) => check.stage === "WRONG_ACTOR")) {
+        await recordAccessCheck(file, clients, deployment, "WRONG_ACTOR", "ACTOR_MISMATCH", "delegate");
+      }
       file.status = "SUCCESS";
       file.completedAt = new Date().toISOString();
       file.finalCanonicalState = state.canonical;

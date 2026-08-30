@@ -9,7 +9,7 @@ GrantLattice uses GenLayer validator consensus to ensure natural-language agent 
 ## Deployed Contract
 
 - Network: GenLayer Studionet
-- Contract: [`0x4CD1Af773D89f7c8c8b561C99060f52f77383E4C`](https://explorer-studio.genlayer.com/address/0x4CD1Af773D89f7c8c8b561C99060f52f77383E4C)
+- Contract: [`0x7E090E43D8d0b9dDfF20acAA89bD3093e705a162`](https://explorer-studio.genlayer.com/address/0x7E090E43D8d0b9dDfF20acAA89bD3093e705a162)
 - Contract writes: nonpayable (`0 GEN`)
 
 ## The Problem
@@ -63,11 +63,13 @@ The full locked specification and claim-to-code matrix are in
 - Frontend tests: 75 passed across 21 files, plus TypeScript and production build.
 - Studionet lifecycle: root creation, deterministic widening rejection,
   validator-controlled attenuation/expansion/ambiguity, allow, revocation, and
-  descendant denial all recorded with sanitized finalized evidence.
-- Browser reads: deployed grant list and `ANCESTOR_INACTIVE` access denial loaded
+  descendant denial all recorded with sanitized finalized evidence. A public-ID
+  replay by the wrong actor returned `ACTOR_MISMATCH`.
+- Historical browser reads on the prior revision: deployed grant list and
+  `ANCESTOR_INACTIVE` access denial loaded
   through the same-origin IC path without CORS or `Failed to fetch` errors.
 - Chrome wallet discovery: Rabby and OKX were detected without auto-selection.
-- OKX browser write: root creation finalized successfully on Studionet; the
+- Historical OKX browser write on the prior revision: root creation finalized successfully on Studionet; the
   production UI reloaded `ACTIVE`/effective state and `can_invoke` returned
   `ALLOWED` for the exact `READ` / `browser-demo` scope.
 
@@ -91,7 +93,7 @@ Copy-Item frontend/.env.example frontend/.env.local
 Set the public deployed address in `frontend/.env.local`:
 
 ```dotenv
-VITE_CONTRACT_ADDRESS=0x4CD1Af773D89f7c8c8b561C99060f52f77383E4C
+VITE_GENLAYER_CONTRACT_ADDRESS=0x7E090E43D8d0b9dDfF20acAA89bD3093e705a162
 VITE_GENLAYER_IC_RPC_PATH=/api/genlayer
 VITE_GENLAYER_NETWORK=studionet
 ```
@@ -144,9 +146,9 @@ patterns; it does not claim external adoption.
 - Wallet connection only scopes the app workspace. Canonical grant state remains
   public through contract reads, RPC, and Explorer; the UI is not a
   confidentiality boundary.
-- The Studionet address and production evidence above predate the actor-bound
-  `can_invoke` ABI in the current source. A new deployment and browser lifecycle
-  are required before claiming the remediation on Studionet or production.
+- The actor-bound ABI and fail-closed time/validator changes are deployed and
+  lifecycle-proven on Studionet. Production browser verification for this new
+  address remains pending until the frontend deployment is updated.
 - The validator judges authored policy meaning, not external real-world truth;
   ambiguity intentionally remains inactive and retryable.
 - V1 is bounded to 8 clauses, 16 capabilities/resources, and delegation depth 8.

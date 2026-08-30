@@ -14,14 +14,27 @@ import {
 
 
 test("access checks bind the protected action to the recorded child grantee", () => {
+  const clients = {
+    principalAccount: { address: "0x1111111111111111111111111111111111111111" },
+    delegateAccount: { address: "0x2222222222222222222222222222222222222222" },
+  };
   assert.deepEqual(
     accessCheckArgs(
       { ids: { valid: "grantlattice-valid-v2" } },
-      { principalAccount: { address: "0x1111111111111111111111111111111111111111" } },
+      clients,
     ),
     [
       "grantlattice-valid-v2",
       "0x1111111111111111111111111111111111111111",
+      "READ",
+      "case-1",
+    ],
+  );
+  assert.deepEqual(
+    accessCheckArgs({ ids: { valid: "grantlattice-valid-v2" } }, clients, "delegate"),
+    [
+      "grantlattice-valid-v2",
+      "0x2222222222222222222222222222222222222222",
       "READ",
       "case-1",
     ],

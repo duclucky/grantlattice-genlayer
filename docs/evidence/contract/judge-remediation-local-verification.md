@@ -1,12 +1,12 @@
 # Judge remediation local verification
 
-Status: **LOCAL PASS; PRECHECK 0 BLOCKER; REMEDIATED DEPLOYMENT PENDING**
+Status: **LOCAL PASS; PRECHECK 0 BLOCKER**
 
 Date: 2026-08-31
 
 ## Scope
 
-This evidence covers the reviewer-requested actor-bound access check, strict
+This local evidence covers the reviewer-requested actor-bound access check, strict
 transaction-time failure, explicit custom-validator error handling, and honest
 wallet-scoped visibility language. It does not claim that the actor-bound ABI is
 deployed to Studionet or production. The currently documented live address and
@@ -113,10 +113,11 @@ No private key, seed phrase, wallet export, parent-workspace control file, or
 private `.env` is tracked. The example frontend environment contains public
 configuration names only.
 
-## Remaining evidence boundary
+## Subsequent network evidence
 
-The source ABI has changed, so the old Studionet contract and Vercel deployment
-must not be presented as proof of the remediation. A new deploy, actor-bound
-Studionet lifecycle, frontend configuration update, browser-local CORS check,
-production deploy, and wallet/browser verification require explicit publication
-authorization and fresh evidence before those claims can become `PASS`.
+The old Studionet contract and browser evidence must not be presented as proof
+of the remediation. The subsequent actor-bound deployment and lifecycle are
+recorded separately in
+`docs/evidence/studionet/judge-remediation-verification.md`. Browser-local CORS,
+production deployment, and wallet/browser verification of the new address remain
+separate evidence gates.
