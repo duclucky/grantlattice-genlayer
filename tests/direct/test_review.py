@@ -265,6 +265,9 @@ def test_semantic_validator_compares_complete_meaning_not_json_order(
     assert direct_vm.run_validator(leader_result=changed_class) is False
     assert direct_vm.run_validator(leader_result=missing) is False
 
+    direct_vm.clear_mocks()
+    assert direct_vm.run_validator(leader_result=reordered) is False
+
 
 def test_prompt_injection_text_does_not_choose_consequence(
     contract, direct_vm, direct_alice, direct_bob, direct_charlie

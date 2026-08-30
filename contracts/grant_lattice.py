@@ -190,22 +190,27 @@ class GrantLattice(gl.Contract):
             )
 
         def validator_fn(leader_result) -> bool:
-            if not isinstance(leader_result, gl.vm.Return):
+            try:
+                if not isinstance(leader_result, gl.vm.Return):
+                    return False
+                independent = leader_fn()
+                return self._review_fingerprint(
+                    leader_result.calldata,
+                    child_id,
+                    attempt,
+                    expected_ids,
+                ) == self._review_fingerprint(
+                    independent,
+                    child_id,
+                    attempt,
+                    expected_ids,
+                )
+            except Exception:
                 return False
-            independent = leader_fn()
-            return self._review_fingerprint(
-                leader_result.calldata,
-                child_id,
-                attempt,
-                expected_ids,
-            ) == self._review_fingerprint(
-                independent,
-                child_id,
-                attempt,
-                expected_ids,
-            )
 
-        raw_review = gl.vm.run_nondet(leader_fn, validator_fn)
+        # Current GenLayer guidance recommends run_nondet_unsafe for a custom
+        # validator; every validator exception becomes explicit disagreement.
+        raw_review = gl.vm.run_nondet_unsafe(leader_fn, validator_fn)
 
         current_child = self._require_grant(child_id)
         current_parent = self._require_grant(current_child.parent_id)
@@ -662,11 +667,11 @@ class GrantLattice(gl.Contract):
         try:
             normalized = raw_text[:-1] + "+00:00" if raw_text.endswith("Z") else raw_text
             parsed = datetime.fromisoformat(normalized)
-            if parsed.tzinfo is None or parsed.utcoffset() is None:
-                raise ValueError("timezone required")
-            return bigint(int(parsed.timestamp()))
         except Exception:
             raise gl.vm.UserError("transaction datetime invalid")
+        if parsed.tzinfo is None or parsed.utcoffset() is None:
+            raise gl.vm.UserError("transaction datetime invalid")
+        return bigint(int(parsed.timestamp()))
 
     def _is_alphanumeric(self, char: str) -> bool:
         return (

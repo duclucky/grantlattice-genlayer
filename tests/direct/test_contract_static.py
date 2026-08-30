@@ -78,11 +78,38 @@ def test_v1_has_no_payable_or_value_transfer_path():
     assert "10**18" not in text
 
 
-def test_semantic_review_uses_locked_safe_nondeterminism_api():
+def test_semantic_review_uses_explicit_custom_validator_error_boundary():
     text = source()
-    assert "gl.vm.run_nondet(" in text
-    assert "run_nondet_unsafe" not in text
+    assert "gl.vm.run_nondet_unsafe(" in text
+    assert "Current GenLayer guidance recommends" in text
     assert "isinstance(leader_result, gl.vm.Return)" in text
+
+    tree = ast.parse(text)
+    contract = next(
+        node for node in tree.body if isinstance(node, ast.ClassDef) and node.name == "GrantLattice"
+    )
+    review = next(
+        node
+        for node in contract.body
+        if isinstance(node, ast.FunctionDef) and node.name == "review_child_grant"
+    )
+    validator = next(
+        node
+        for node in ast.walk(review)
+        if isinstance(node, ast.FunctionDef) and node.name == "validator_fn"
+    )
+    handlers = [node for node in ast.walk(validator) if isinstance(node, ast.ExceptHandler)]
+    assert any(
+        handler.type is not None
+        and ast.unparse(handler.type) == "Exception"
+        and any(
+            isinstance(node, ast.Return)
+            and isinstance(node.value, ast.Constant)
+            and node.value.value is False
+            for node in ast.walk(handler)
+        )
+        for handler in handlers
+    )
 
 
 def test_transaction_time_has_no_zero_fallback_and_requires_raw_datetime():
