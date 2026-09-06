@@ -38,6 +38,32 @@ interface ListenerRecord {
   chainChanged: (...args: unknown[]) => void;
 }
 
+const SELECTED_PROVIDER_KEY = "grantlattice.wallet.provider.rdns";
+
+function readSelectedProviderRdns(): string | null {
+  try {
+    return typeof window === "undefined" ? null : window.sessionStorage.getItem(SELECTED_PROVIDER_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function writeSelectedProviderRdns(rdns: string): void {
+  try {
+    if (typeof window !== "undefined") window.sessionStorage.setItem(SELECTED_PROVIDER_KEY, rdns);
+  } catch {
+    // An unavailable session store must not block a valid wallet connection.
+  }
+}
+
+function clearSelectedProviderRdns(): void {
+  try {
+    if (typeof window !== "undefined") window.sessionStorage.removeItem(SELECTED_PROVIDER_KEY);
+  } catch {
+    // Logout still clears in-memory state when storage is unavailable.
+  }
+}
+
 const WalletContext = createContext<WalletContextValue | null>(null);
 
 export function WalletProvider({
@@ -61,6 +87,7 @@ export function WalletProvider({
   }, []);
 
   const disconnect = useCallback(() => {
+    clearSelectedProviderRdns();
     removeListeners();
     setSelectedProvider(null);
     setAccount(null);
@@ -79,12 +106,75 @@ export function WalletProvider({
     }
   }, [discover]);
 
+  const setConnectedProvider = useCallback((info: WalletProviderInfo, nextAccount: string, chainId: string) => {
+    removeListeners();
+    const accountsChanged = (...args: unknown[]) => {
+      const accounts = args[0];
+      setAccount(Array.isArray(accounts) && typeof accounts[0] === "string" ? accounts[0] : null);
+    };
+    const chainChanged = (...args: unknown[]) => {
+      const nextChainId = args[0];
+      setNetworkState(
+        typeof nextChainId === "string" && nextChainId.toLowerCase() === STUDIONET.chainId
+          ? "ready"
+          : "wrong",
+      );
+    };
+    info.provider.on?.("accountsChanged", accountsChanged);
+    info.provider.on?.("chainChanged", chainChanged);
+    listeners.current = { provider: info.provider, accountsChanged, chainChanged };
+    setSelectedProvider(info);
+    setAccount(nextAccount);
+    setNetworkState(chainId.toLowerCase() === STUDIONET.chainId ? "ready" : "wrong");
+  }, [removeListeners]);
+
   useEffect(() => {
-    void refreshProviders();
-    return removeListeners;
-  }, [refreshProviders, removeListeners]);
+    let alive = true;
+
+    async function initialize() {
+      let nextProviders: WalletProviderInfo[];
+      try {
+        nextProviders = await discover();
+      } catch {
+        if (alive) {
+          setProviders([]);
+          setError("Wallet discovery failed. No wallet was selected.");
+        }
+        return;
+      }
+      if (!alive) return;
+      setProviders(nextProviders);
+
+      const rdns = readSelectedProviderRdns();
+      if (!rdns) return;
+      const selected = nextProviders.find((item) => item.rdns === rdns);
+      if (!selected) return;
+
+      try {
+        const accounts = await selected.provider.request({ method: "eth_accounts" });
+        const nextAccount = Array.isArray(accounts) && typeof accounts[0] === "string"
+          ? accounts[0]
+          : null;
+        if (!nextAccount || !alive) return;
+
+        const chainId = await selected.provider.request({ method: "eth_chainId" });
+        if (typeof chainId !== "string" || !alive) return;
+
+        setConnectedProvider(selected, nextAccount, chainId);
+      } catch {
+        // Silent restoration is best effort and must never create a ready state.
+      }
+    }
+
+    void initialize();
+    return () => {
+      alive = false;
+      removeListeners();
+    };
+  }, [discover, removeListeners, setConnectedProvider]);
 
   const connect = useCallback(async (info: WalletProviderInfo) => {
+    clearSelectedProviderRdns();
     removeListeners();
     setConnecting(true);
     setError(null);
@@ -99,24 +189,10 @@ export function WalletProvider({
         : null;
       if (!nextAccount) throw new Error("No account returned");
 
-      const accountsChanged = (...args: unknown[]) => {
-        const accounts = args[0];
-        setAccount(Array.isArray(accounts) && typeof accounts[0] === "string" ? accounts[0] : null);
-      };
-      const chainChanged = (...args: unknown[]) => {
-        const chainId = args[0];
-        setNetworkState(
-          typeof chainId === "string" && chainId.toLowerCase() === STUDIONET.chainId
-            ? "ready"
-            : "wrong",
-        );
-      };
-      info.provider.on?.("accountsChanged", accountsChanged);
-      info.provider.on?.("chainChanged", chainChanged);
-      listeners.current = { provider: info.provider, accountsChanged, chainChanged };
-      setSelectedProvider(info);
-      setAccount(nextAccount);
-      setNetworkState("ready");
+      const chainId = await info.provider.request({ method: "eth_chainId" });
+      if (typeof chainId !== "string") throw new Error("No chain returned");
+      setConnectedProvider(info, nextAccount, chainId);
+      writeSelectedProviderRdns(info.rdns);
     } catch {
       setSelectedProvider(null);
       setAccount(null);
@@ -125,7 +201,7 @@ export function WalletProvider({
     } finally {
       setConnecting(false);
     }
-  }, [removeListeners]);
+  }, [removeListeners, setConnectedProvider]);
 
   const value = useMemo<WalletContextValue>(() => ({
     providers,

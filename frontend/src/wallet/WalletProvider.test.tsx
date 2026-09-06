@@ -72,6 +72,7 @@ describe("WalletProvider", () => {
       "eth_requestAccounts",
       "eth_chainId",
     ]);
+    expect(sessionStorage.getItem("grantlattice.wallet.provider.rdns")).toBe(info.rdns);
   });
 
   it("restores the deliberately selected provider silently after remount", async () => {
