@@ -115,7 +115,7 @@ Create a callback `setConnectedProvider(info: WalletProviderInfo, nextAccount: s
 
 - [ ] **Step 3: Update deliberate connect and disconnect**
 
-Keep `ensureStudionet()` and `eth_requestAccounts` in `connect(info)`. After the account response, request `eth_chainId`, call `setConnectedProvider`, then persist `info.rdns`. Call `clearSelectedProviderRdns()` at the start of `disconnect()` before clearing listeners and in-memory state. Any failed request uses the existing error path and leaves the session cleared.
+Keep `ensureStudionet()` and `eth_requestAccounts` in `connect(info)`. `ensureStudionet()` is the authoritative network switch for a deliberate connect, so preserve the existing provider compatibility and pass the known `STUDIONET.chainId` to `setConnectedProvider` rather than adding another chain read here. Persist `info.rdns` only after the account is returned. Call `clearSelectedProviderRdns()` at the start of `disconnect()` before clearing listeners and in-memory state. Any failed request uses the existing error path and leaves the session cleared.
 
 - [ ] **Step 4: Add mount-time silent restoration**
 

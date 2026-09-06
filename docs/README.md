@@ -125,7 +125,7 @@ for implementation.
 | Semantic review | Recorded child grantor | Ask validators to decide qualitative attenuation | Child status, attempt, user-facing verdict/recovery | Nondeterministic real write; full finality; no value | Technical/unverifiable output remains inactive and retryable; semantic ambiguity is terminal for its fingerprint |
 | Protective revocation | Recorded grantor or root principal | Stop one grant and its descendant authority | Actor eligibility, current status, lineage/effective outcome | Real write; full finality; no value | Wrong actor/duplicate rejects unchanged; unavailable reads fail closed |
 | Access check | Authenticated grantee or integrator acting for that grantee | Decide whether one capability/resource may proceed | Exact grant ID, authenticated actor, effective result, user-facing denial reason | Canonical deterministic read; no value | Actor mismatch or unavailable read is never an allow result |
-| Disconnect | Connected user | Clear selected wallet/account and disable writes | Selected provider/account UI session only | Immediate local session action | Reconnect by deliberately selecting a provider again |
+| Disconnect | Connected user | Clear selected wallet/account and disable writes | Selected provider/account UI session; reload selection is removed | Immediate local session action | Reconnect by deliberately selecting a provider again |
 
 ## Product/frontend blueprint
 
@@ -192,20 +192,23 @@ connected on Studionet and returns an explicit allowlist of fields for matching
 wallet-to-active-contract grant operations. It never forwards calldata, raw
 receipts, validator internals, or unrelated account activity. Disconnect clears
 the selected provider/account UI session, removes Activity data immediately, and
-disables writes.
+disables writes. A deliberately selected provider is silently revalidated after
+a page reload through the wallet's live `eth_accounts` response; the account is
+not cached by the app. Explicit Disconnect removes that provider selection, so
+a later reload stays disconnected until the user deliberately reconnects.
 
 ### UI action matrix
 
 | Visible control | Contract capability/method | Eligible role | Legal state | Input/value | Finality | Failure/recovery |
 | --- | --- | --- | --- | --- | --- | --- |
-| Connect wallet | Provider session | Any visitor | Disconnected | Selected detected provider; no value | Immediate account request after selection | Choose another provider, reject safely, or retry |
+| Connect wallet | Provider session | Any visitor | Disconnected | Selected detected provider; no value | Immediate account request after selection; silent `eth_accounts` revalidation after reload | Choose another provider, reject safely, or retry |
 | Create root grant | `create_root_grant` | Principal | Connected; valid future expiry | Grant ID, grantee, scopes, clauses, expiry, max depth, nonce; no value | Submitted -> accepted/decided -> finalized | Failure leaves no canonical grant; edit and retry |
 | Delegate child | `propose_child_grant` | Active parent grantee | Parent effective and depth available | Parent/child IDs, grantee, subset scopes, clauses, expiry, nonce; no value | Submitted -> accepted/decided -> finalized | Objective failure leaves no child; correct form and retry |
 | Request review | `review_child_grant` | Recorded child grantor | `PROPOSED` or technical `RETRYABLE`; unexpired chain | Child ID; no value | Nondeterministic accepted/decided -> finalized | Technical/unverifiable output offers legal retry; semantic ambiguity requires material policy/scope revision |
 | Revoke grant | `revoke_grant` | Recorded grantor or root principal | Existing, not already revoked | Grant ID and nonce; no value | Submitted -> accepted/decided -> finalized | Wrong actor/duplicate rejects unchanged; refresh canonical state |
 | Check access | `can_invoke` | Connected actor or integrator with an authenticated actor | Canonical read available | Grant, authenticated actor, capability, resource; no value | Deterministic read | Actor mismatch or unavailable canonical read fails closed and offers retry |
 | Open account menu | Wallet session | Connected user | Connected | No value | Immediate UI action | Menu remains keyboard dismissible |
-| Disconnect | Wallet session | Connected user | Connected | No value | Immediate UI action | Clears selected provider/account and disables writes |
+| Disconnect | Wallet session | Connected user | Connected | No value | Immediate UI action | Clears selected provider/account, removes reload selection, and disables writes |
 
 ### User-facing state language
 
