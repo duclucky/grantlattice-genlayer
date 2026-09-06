@@ -2,7 +2,7 @@
 
 Status: **ALL CODE/NETWORK/PUBLISHING GATES PASS; ONE INTERACTIVE BROWSER EVIDENCE ITEM PENDING**
 
-Date: 2026-08-31
+Date: 2026-09-06
 
 This audit follows the final full reread of all 872 lines of
 `MASTER-PROMPT-GENLAYER-END-TO-END.md`. It distinguishes implementation status
@@ -43,7 +43,7 @@ actor-bound revision.
    write). Source is ASCII, has the exact Depends header, and exactly one
    validator-visible `gl.Contract` subclass.
 9. [x] **Phase 6 — Direct tests/local verification.** Final `npm run check`
-   passed 70 Python tests, 8 deployment tests, 75 frontend tests in 21 files,
+   passed 72 Python tests, 8 deployment tests, 149 frontend tests in 27 files,
    TypeScript, and Vite production build. Precheck independently reported both
    `npm run check: PASS` and `gltest: PASS`.
 10. [~] **Phase 7 — Real frontend integration.** Typed production adapter passes
@@ -53,13 +53,14 @@ actor-bound revision.
     fresh interactive render/console/network verification because browser-control
     setup failed twice before navigation with OS error 3.
 11. [x] **Phase 8 — Studionet deploy/lifecycle.** Current contract
-    `0x7E090E43D8d0b9dDfF20acAA89bD3093e705a162` deployed `FINALIZED / SUCCESS /
-    MAJORITY_AGREE`; code exists and balance is 0 GEN. Eight-transaction lifecycle
-    proves attenuation, expansion denial, ambiguity retry, `ALLOWED`, revocation,
-    and `ANCESTOR_INACTIVE`; read-only wrong-actor tripwire proves
-    `ACTOR_MISMATCH`. The old zero-balance revision is archived with reason.
+    `0xB80E78f0CdDe708d9dcDfD4A2c74050E38289f95` deployed `FINALIZED / SUCCESS /
+    MAJORITY_AGREE`; code exists and balance is 0 GEN. The ten-write lifecycle
+    proves attenuation, expansion denial, terminal semantic ambiguity,
+    cross-`child_id` fingerprint rejection, material revision, `ALLOWED`,
+    revocation, and `ANCESTOR_INACTIVE`; read-only wrong-actor tripwire proves
+    `ACTOR_MISMATCH`. The superseded revisions are archived with reason.
 12. [x] **Phase 9 — Wire address/build.** Ignored frontend configuration uses the
-    new address. `npm --workspace frontend run build` transformed 5104 modules and
+    new address. `npm --workspace frontend run build` transformed 5106 modules and
     exited 0; the production bundle contains the new address and not the old one.
 13. [x] **Phase 10 — English audit.** Non-ASCII scan of UI/README found only an
     intentional negative test string containing an em dash; no non-English

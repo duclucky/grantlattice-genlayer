@@ -9,7 +9,7 @@ GrantLattice uses GenLayer validator consensus to ensure natural-language agent 
 ## Deployed Contract
 
 - Network: GenLayer Studionet
-- Contract: [`0x7E090E43D8d0b9dDfF20acAA89bD3093e705a162`](https://explorer-studio.genlayer.com/address/0x7E090E43D8d0b9dDfF20acAA89bD3093e705a162)
+- Contract: [`0xB80E78f0CdDe708d9dcDfD4A2c74050E38289f95`](https://explorer-studio.genlayer.com/address/0xB80E78f0CdDe708d9dcDfD4A2c74050E38289f95)
 - Contract writes: nonpayable (`0 GEN`)
 
 ## The Problem
@@ -71,7 +71,7 @@ The full locked specification and claim-to-code matrix are in
   validator-controlled attenuation/expansion/ambiguity, allow, revocation, and
   descendant denial all recorded with sanitized finalized evidence. A public-ID
   replay by the wrong actor returned `ACTOR_MISMATCH`.
-- Historical browser reads on the prior revision: deployed grant list and
+- Historical browser reads on the archived prior revision: deployed grant list and
   `ANCESTOR_INACTIVE` access denial loaded
   through the same-origin IC path without CORS or `Failed to fetch` errors.
 - Chrome wallet discovery: Rabby and OKX were detected without auto-selection.
@@ -99,7 +99,7 @@ Copy-Item frontend/.env.example frontend/.env.local
 Set the public deployed address in `frontend/.env.local`:
 
 ```dotenv
-VITE_GENLAYER_CONTRACT_ADDRESS=0x7E090E43D8d0b9dDfF20acAA89bD3093e705a162
+VITE_GENLAYER_CONTRACT_ADDRESS=0xB80E78f0CdDe708d9dcDfD4A2c74050E38289f95
 VITE_GENLAYER_IC_RPC_PATH=/api/genlayer
 VITE_GENLAYER_NETWORK=studionet
 ```

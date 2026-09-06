@@ -46,13 +46,15 @@ when its limits are written in natural language.**
 - Consensus question: after objective subset checks pass, whether every child
   clause is `NARROWER_OR_EQUAL`, `EXPANDS_AUTHORITY`, or `AMBIGUOUS` relative to
   exact parent clause IDs, with complete parent-prohibition coverage.
-- State machine: root `ACTIVE`; child `PROPOSED | RETRYABLE -> ACTIVE | DENIED
-  | RETRYABLE` after a review transaction; transaction-local reviewing is not a
-  persisted grant status. Protective revocation and derived expiry make a grant
-  ineffective.
+- State machine: root `ACTIVE`; child `PROPOSED | RETRYABLE -> ACTIVE | DENIED |
+  AMBIGUOUS` after a review transaction (technical retry may self-loop to
+  `RETRYABLE`); transaction-local reviewing
+  is not a persisted grant status. Protective revocation and derived expiry make
+  a grant ineffective.
 - Direct consequence: only a finalized, invariant-valid attenuated verdict
-  activates child authority; expansion denies it, and ambiguity/invalid output
-  remains inactive and retryable.
+  activates child authority; expansion denies it, semantic ambiguity is a
+  terminal fingerprint lock, and only technical/unverifiable output remains
+  retryable.
 - Reuse surface: `get_grant`, `get_review`, `is_effective`, and `can_invoke` for
   A2A AgentSkill gateways, MCP tools/call proxies, and Google ADK AgentTool guards.
 

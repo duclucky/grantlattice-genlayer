@@ -2,12 +2,12 @@
 
 Status: **DEPLOYMENT/HTTP/BUNDLE/PROXY PASS; INTERACTIVE BROWSER PENDING**
 
-Date: 2026-08-31
+Date: 2026-09-06
 
 ## Production deployment
 
 The Vercel production environment variable `VITE_CONTRACT_ADDRESS` was updated
-to `0x7E090E43D8d0b9dDfF20acAA89bD3093e705a162` before deployment.
+to `0xB80E78f0CdDe708d9dcDfD4A2c74050E38289f95` before deployment.
 
 Command:
 
@@ -18,12 +18,12 @@ vercel --prod --yes --cwd frontend --no-color
 Observed output:
 
 ```text
-deployment: dpl_EUAbNMq9fwsDHjroABcXhPUbxAQr
+deployment: dpl_3YomkqTmLa7Z4DvY3vW1hc1sgXky
 readyState: READY
 target: production
-production deployment: https://grantlattice-genlayer-cgpwc9fr0-duckys-projects-bc83c6a0.vercel.app
+production deployment: https://grantlattice-genlayer-ii27yfpyg-duckys-projects-bc83c6a0.vercel.app
 alias: https://grantlattice-genlayer.vercel.app
-Vite: 5104 modules transformed; built in 2.00s
+Vite: 5106 modules transformed; built in 1.99s
 ```
 
 ## Live alias and bundle
@@ -33,7 +33,7 @@ Commands:
 ```powershell
 curl.exe -sS -I https://grantlattice-genlayer.vercel.app
 curl.exe -sS https://grantlattice-genlayer.vercel.app
-curl.exe -sS https://grantlattice-genlayer.vercel.app/assets/index-zyBLDKEi.js
+curl.exe -sS https://grantlattice-genlayer.vercel.app/assets/index-44iSmDK0.js
 ```
 
 Observed output:
@@ -42,8 +42,8 @@ Observed output:
 HTTP/1.1 200 OK
 HTML contains GrantLattice: true
 HTML contains id="root": true
-bundle contains 0x7E090E43D8d0b9dDfF20acAA89bD3093e705a162: true
-bundle contains superseded 0x4CD1...3E4C: false
+bundle contains 0xB80E78f0CdDe708d9dcDfD4A2c74050E38289f95: true
+bundle contains superseded 0x7E09...A162: false
 ```
 
 ## Same-origin RPC
@@ -71,8 +71,8 @@ browser rendering and console/network inspection.
 
 ## Public CI
 
-GitHub Actions run `33337312596` completed successfully for source/evidence
-commit `46124db10eb0686c74dcce25dd46859cd57c7b4b` after 5m11s:
+GitHub Actions run for the source/evidence commit is recorded in the submission
+audit after the push:
 
 `https://github.com/duclucky/grantlattice-genlayer/actions/runs/33337312596`
 
