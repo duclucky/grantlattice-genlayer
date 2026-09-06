@@ -80,8 +80,8 @@ actor-bound revision.
     current contract/explorer, exact current test counts, public CI, and honest
     browser/adoption limitations.
 18. [x] **Phase 15 — Pre-submission audit/packet.** Current-address Projects
-    precheck reported `0 BLOCKER`, dynamic checks PASS, git hygiene OK, 20/20
-    estimate, and 997-character notes within the limit. Three warnings were
+    precheck reported `0 BLOCKER`, dynamic checks PASS, git hygiene OK, 19/20
+    rubric estimate, and 998-character notes within the limit. Three warnings were
     explicitly triaged; the wrapper exits 1 for warnings, not a blocker.
 19. [x] **Phase 16 — Postmortem/registry.** The root `IDEA-REGISTRY.md` records
     the actor/time/validator/visibility remediation, new contract, CI, Vercel,
