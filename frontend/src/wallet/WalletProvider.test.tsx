@@ -70,7 +70,6 @@ describe("WalletProvider", () => {
     expect(request.mock.calls.map(([args]) => args.method)).toEqual([
       "wallet_switchEthereumChain",
       "eth_requestAccounts",
-      "eth_chainId",
     ]);
     expect(sessionStorage.getItem("grantlattice.wallet.provider.rdns")).toBe(info.rdns);
   });

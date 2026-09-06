@@ -189,9 +189,7 @@ export function WalletProvider({
         : null;
       if (!nextAccount) throw new Error("No account returned");
 
-      const chainId = await info.provider.request({ method: "eth_chainId" });
-      if (typeof chainId !== "string") throw new Error("No chain returned");
-      setConnectedProvider(info, nextAccount, chainId);
+      setConnectedProvider(info, nextAccount, STUDIONET.chainId);
       writeSelectedProviderRdns(info.rdns);
     } catch {
       setSelectedProvider(null);
