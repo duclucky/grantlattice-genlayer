@@ -66,19 +66,23 @@ The full locked specification and claim-to-code matrix are in
 - GenVM lint: 3 checks passed; `GrantLattice` recognized with 9 methods.
 - Python/direct/static/parser tests: 72 passed.
 - Deployment helper tests: 8 passed.
-- Frontend tests: 149 passed across 27 files, plus TypeScript and production build.
+- Frontend tests: 151 passed across 27 files, plus TypeScript and production build.
 - Studionet lifecycle: root creation, deterministic widening rejection,
   validator-controlled attenuation/expansion, terminal semantic ambiguity with
   cross-ID fingerprint rejection, material revision, allow, revocation, and
   descendant denial all recorded with sanitized finalized evidence. A public-ID
   replay by the wrong actor returned `ACTOR_MISMATCH`.
+- Current production browser-wallet lifecycle: OKX-signed root creation,
+  narrower child proposal, semantic review (`ALL_CLAUSES_NARROWER`), exact-scope
+  `ALLOWED` access, child revocation, and post-revocation `GRANT_INACTIVE` were
+  all finalized on Studionet with `0 GEN` contract calls.
 - Historical browser reads on the archived prior revision: deployed grant list and
   `ANCESTOR_INACTIVE` access denial loaded
   through the same-origin IC path without CORS or `Failed to fetch` errors.
 - Chrome wallet discovery: Rabby and OKX were detected without auto-selection.
-- Historical OKX browser write on the prior revision: root creation finalized successfully on Studionet; the
-  production UI reloaded `ACTIVE`/effective state and `can_invoke` returned
-  `ALLOWED` for the exact `READ` / `browser-demo` scope.
+- The production UI reloaded the current root and child canonical state, and
+  `can_invoke` returned `ALLOWED` for the exact `READ` / `browser-demo` scope
+  before revocation.
 
 See [`docs/evidence`](docs/evidence) for current command output, safe receipt
 projections, canonical reads, and honest evidence boundaries.
@@ -148,9 +152,6 @@ patterns; it does not claim external adoption.
 
 ## Honest Limitations
 
-- Browser-wallet proof covers one OKX-signed root creation only; child proposal,
-  semantic review, and revocation browser writes remain test-backed rather than
-  separately wallet-demonstrated.
 - Wallet connection only scopes the app workspace. Canonical grant state remains
   public through contract reads, RPC, and Explorer, and transaction hashes are
   public network data. Activity returns only allowlisted grant operations for
@@ -158,8 +159,7 @@ patterns; it does not claim external adoption.
   boundary.
 - The actor-bound ABI and fail-closed time/validator changes are deployed and
   lifecycle-proven on Studionet. The production bundle and same-origin RPC use
-  the new address; interactive browser verification is pending because the
-  browser-control backend was unavailable during final verification.
+  the active contract address listed above.
 - The validator judges authored policy meaning, not external real-world truth;
   ambiguity intentionally remains inactive and terminal for the exact canonical
   definition, while only technical unverifiability is retryable.
