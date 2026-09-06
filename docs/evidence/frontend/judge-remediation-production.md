@@ -71,10 +71,10 @@ browser rendering and console/network inspection.
 
 ## Public CI
 
-GitHub Actions run for the source/evidence commit is recorded in the submission
-audit after the push:
+GitHub Actions run `34046195858` completed successfully for source/evidence
+commit `4b39c3700ab765b56d720091b3e9a5bf3b5e8770`:
 
-`https://github.com/duclucky/grantlattice-genlayer/actions/runs/33337312596`
+`https://github.com/duclucky/grantlattice-genlayer/actions/runs/34046195858`
 
 ## Interactive browser boundary
 

@@ -68,14 +68,14 @@ actor-bound revision.
 14. [x] **Phase 11 — Public GitHub/hygiene.** Exact staged files and content were
     audited, secret patterns were absent, `.env` files remained ignored, and
     `main` was pushed without force to the public repository at commit
-    `46124db10eb0686c74dcce25dd46859cd57c7b4b`.
+    `4b39c3700ab765b56d720091b3e9a5bf3b5e8770`.
 15. [x] **Phase 12 — Vercel deploy.** Production deployment
-    `dpl_EUAbNMq9fwsDHjroABcXhPUbxAQr` reached `READY` and was aliased to
+    `dpl_3YomkqTmLa7Z4DvY3vW1hc1sgXky` reached `READY` and was aliased to
     `https://grantlattice-genlayer.vercel.app`.
-16. [x] **Phase 13 — Live CLI verification.** `curl -I` returned HTTP 200; HTML
-    contains `GrantLattice` and `id="root"`; the production bundle contains the
-    new address and excludes the superseded address; `/api/genlayer` returns
-    chain ID `0xf22f` (61999).
+16. [x] **Phase 13 — Live CLI verification.** `Invoke-WebRequest` returned HTTP
+    200; HTML contains `GrantLattice` and `id="root"`; the production bundle
+    contains the new address and excludes the superseded address;
+    `/api/genlayer` returns chain ID `0xf22f` (61999).
 17. [x] **Phase 14 — README/push.** Public README names the verified live URL,
     current contract/explorer, exact current test counts, public CI, and honest
     browser/adoption limitations.
