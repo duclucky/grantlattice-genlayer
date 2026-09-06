@@ -26,7 +26,10 @@ agree on one of three bounded meanings:
 
 - `NARROWER_OR_EQUAL`: every clause safely attenuates, so the child activates.
 - `EXPANDS_AUTHORITY`: at least one clause is broader, so the child is denied.
-- `AMBIGUOUS`: meaning is not safe to settle, so the child remains inactive and retryable.
+- `AMBIGUOUS`: meaning is not safe to settle, so the exact canonical definition
+  remains inactive and is permanently locked against semantic re-review.
+- `UNVERIFIABLE`: the validator execution or output could not be verified, so
+  the inactive child may be retried without treating failure as authority.
 
 Revocation or expiry of any ancestor makes descendant authority ineffective.
 Consumers authenticate the actor, verify that actor against the canonical
@@ -132,7 +135,8 @@ needed; every contract call sends `0 GEN`.
 ## Reusable Interface
 
 - `get_grant(grant_id)` returns canonical grant scope, lineage, and state.
-- `get_review(grant_id)` returns the latest normalized semantic outcome.
+- `get_review(grant_id)` returns the latest normalized semantic outcome and its
+  contract-derived authority-definition fingerprint.
 - `is_effective(grant_id)` derives live authority through bounded ancestry.
 - `can_invoke(grant_id, actor, capability_id, resource_id)` binds the protected
   action to the recorded grantee and returns an exact fail-closed reason.
@@ -156,7 +160,8 @@ patterns; it does not claim external adoption.
   the new address; interactive browser verification is pending because the
   browser-control backend was unavailable during final verification.
 - The validator judges authored policy meaning, not external real-world truth;
-  ambiguity intentionally remains inactive and retryable.
+  ambiguity intentionally remains inactive and terminal for the exact canonical
+  definition, while only technical unverifiability is retryable.
 - V1 is bounded to 8 clauses, 16 capabilities/resources, and delegation depth 8.
 - A2A, MCP, and Google ADK are documented integration patterns, not deployed adopters.
 - No value, fee, bond, reward, escrow, payout, or credit path exists.

@@ -210,7 +210,11 @@ export function selectNextLifecycleAction(state) {
   if (state.rootStatus === "ACTIVE" && state.expansionStatus === "PROPOSED") return "REVIEW_EXPANSION";
   if (state.rootStatus === "ACTIVE" && state.expansionStatus === "DENIED" && !state.ambiguousStatus) return "PROPOSE_AMBIGUOUS";
   if (state.rootStatus === "ACTIVE" && state.ambiguousStatus === "PROPOSED") return "REVIEW_AMBIGUOUS";
-  if (state.rootStatus === "ACTIVE" && state.ambiguousStatus === "RETRYABLE" && state.accessBefore == null) return "CHECK_ACCESS_BEFORE";
+  if (state.rootStatus === "ACTIVE" && state.ambiguousStatus === "AMBIGUOUS" && !state.ambiguousReviewRetryRejected) return "REJECT_AMBIGUOUS_REVIEW_RETRY";
+  if (state.rootStatus === "ACTIVE" && state.ambiguousStatus === "AMBIGUOUS" && state.ambiguousReviewRetryRejected && !state.ambiguousCopyRejected) return "REJECT_AMBIGUOUS_COPY";
+  if (state.rootStatus === "ACTIVE" && state.ambiguousCopyRejected && !state.revisedStatus) return "PROPOSE_REVISED";
+  if (state.rootStatus === "ACTIVE" && state.revisedStatus === "PROPOSED") return "REVIEW_REVISED";
+  if (state.rootStatus === "ACTIVE" && state.revisedStatus === "ACTIVE" && state.accessBefore == null) return "CHECK_ACCESS_BEFORE";
   if (state.rootStatus === "ACTIVE" && state.accessBefore === "ALLOWED") return "REVOKE_ROOT";
   if (state.rootStatus === "REVOKED" && state.accessBefore === "ALLOWED" && state.accessAfter == null) return "CHECK_ACCESS_AFTER";
   if (state.rootStatus === "REVOKED" && state.accessAfter === "ANCESTOR_INACTIVE") return "COMPLETE";
@@ -559,6 +563,8 @@ function newLifecycleFile(deployment, clients) {
       valid: "grantlattice-valid-v1",
       expansion: "grantlattice-expansion-v1",
       ambiguous: "grantlattice-ambiguous-v1",
+      ambiguousCopy: "grantlattice-ambiguous-copy-v1",
+      revised: "grantlattice-revised-v1",
     },
     pendingTransaction: null,
     transactions: [],
@@ -587,20 +593,23 @@ async function canonicalLifecycleState(file, clients, deployment) {
   const readKnownGrant = (grantId) => knownIds.has(grantId)
     ? readView(clients.readClient, address, "get_grant", [grantId])
     : Promise.resolve(null);
-  const [root, objectiveRejected, valid, expansion, ambiguous] = await Promise.all([
+  const [root, objectiveRejected, valid, expansion, ambiguous, ambiguousCopy, revised] = await Promise.all([
     readKnownGrant(file.ids.root),
     readKnownGrant(file.ids.objectiveRejected),
     readKnownGrant(file.ids.valid),
     readKnownGrant(file.ids.expansion),
     readKnownGrant(file.ids.ambiguous),
+    readKnownGrant(file.ids.ambiguousCopy),
+    readKnownGrant(file.ids.revised),
   ]);
   const reviewed = (grant) => grant
     && field(grant, "parent_id", "parentId") !== ""
-    && ["ACTIVE", "DENIED", "RETRYABLE"].includes(field(grant, "status"));
-  const [validReview, expansionReview, ambiguousReview] = await Promise.all([
+    && ["ACTIVE", "AMBIGUOUS", "DENIED", "RETRYABLE"].includes(field(grant, "status"));
+  const [validReview, expansionReview, ambiguousReview, revisedReview] = await Promise.all([
     reviewed(valid) ? readView(clients.readClient, address, "get_review", [file.ids.valid]) : null,
     reviewed(expansion) ? readView(clients.readClient, address, "get_review", [file.ids.expansion]) : null,
     reviewed(ambiguous) ? readView(clients.readClient, address, "get_review", [file.ids.ambiguous]) : null,
+    reviewed(revised) ? readView(clients.readClient, address, "get_review", [file.ids.revised]) : null,
   ]);
   const before = file.accessChecks.find((item) => item.stage === "BEFORE_REVOKE");
   const after = file.accessChecks.find((item) => item.stage === "AFTER_REVOKE");
@@ -610,9 +619,12 @@ async function canonicalLifecycleState(file, clients, deployment) {
     validStatus: field(valid, "status") ?? null,
     expansionStatus: field(expansion, "status") ?? null,
     ambiguousStatus: field(ambiguous, "status") ?? null,
+    ambiguousReviewRetryRejected: file.expectedRejections.some((item) => item.action === "REJECT_AMBIGUOUS_REVIEW_RETRY"),
+    ambiguousCopyRejected: file.expectedRejections.some((item) => item.action === "REJECT_AMBIGUOUS_COPY") && ambiguousCopy === null,
+    revisedStatus: field(revised, "status") ?? null,
     accessBefore: before?.result ?? null,
     accessAfter: after?.result ?? null,
-    canonical: { root, objectiveRejected, valid, validReview, expansion, expansionReview, ambiguous, ambiguousReview },
+    canonical: { root, objectiveRejected, valid, validReview, expansion, expansionReview, ambiguous, ambiguousReview, ambiguousCopy, revised, revisedReview },
   };
 }
 
@@ -660,7 +672,7 @@ async function executeLifecycleWrite({ file, clients, deployment, action, actor,
 }
 
 
-async function executeExpectedRejection({ file, clients, deployment, action, functionName, args, rejectedGrantId, before }) {
+async function executeExpectedRejection({ file, clients, deployment, action, functionName, args, absentGrantId, before }) {
   const actor = "delegate";
   const { account, client } = actorClient(clients, actor);
   await client.initializeConsensusSmartContract();
@@ -668,7 +680,7 @@ async function executeExpectedRejection({ file, clients, deployment, action, fun
   file.pendingTransaction = {
     action, actor, publicAddress: account.address, transactionHash: hash,
     submittedAt: new Date().toISOString(), valueGEN: "0", canonicalBefore: before.canonical,
-    expectedResult: "REJECTED", rejectedGrantId,
+    expectedResult: "REJECTED", absentGrantId: absentGrantId ?? null,
   };
   writeJson(LIFECYCLE_PATH, file);
   console.log(JSON.stringify({ stage: "SUBMITTED", action, actor, expectedResult: "REJECTED", valueGEN: "0", transactionHash: hash }, null, 2));
@@ -676,16 +688,22 @@ async function executeExpectedRejection({ file, clients, deployment, action, fun
     file.pendingTransaction.acceptedAt = new Date().toISOString();
     writeJson(LIFECYCLE_PATH, file);
   });
+  const state = await canonicalLifecycleState(file, clients, deployment);
   const knownIds = await grantIdSet(clients.readClient, deployment.contractAddress);
-  if (knownIds.has(rejectedGrantId)) throw new Error("Objective expansion rejection unexpectedly created a child grant.");
+  if (absentGrantId && knownIds.has(absentGrantId)) throw new Error(`${action} unexpectedly created a child grant.`);
+  if (JSON.stringify(jsonSafe(state.canonical)) !== JSON.stringify(jsonSafe(before.canonical))) {
+    throw new Error(`${action} changed canonical state despite rejection.`);
+  }
   file.expectedRejections.push({
     ...file.pendingTransaction,
     finalizedAt: new Date().toISOString(), status: "FINALIZED", result: "REJECTED_UNCHANGED",
-    receipt: safeReceiptProjection(finalized, action, hash), explorer: `${EXPLORER_URL}/tx/${hash}`, rejectedGrantAbsent: true,
+    receipt: safeReceiptProjection(finalized, action, hash), explorer: `${EXPLORER_URL}/tx/${hash}`,
+    absentGrantVerified: absentGrantId ? true : null,
+    canonicalAfter: state.canonical,
   });
   file.pendingTransaction = null;
   writeJson(LIFECYCLE_PATH, file);
-  return { ...before, objectiveExpansionProved: true };
+  return canonicalLifecycleState(file, clients, deployment);
 }
 
 
@@ -696,13 +714,19 @@ async function reconcilePendingLifecycle(file, clients, deployment) {
   const expected = pending.expectedResult ?? "SUCCESS";
   const { finalized } = await waitForAcceptedAndFinalized(client, pending.transactionHash, pending.action, expected);
   if (expected === "REJECTED") {
+    const state = await canonicalLifecycleState(file, clients, deployment);
     const knownIds = await grantIdSet(clients.readClient, deployment.contractAddress);
-    if (knownIds.has(pending.rejectedGrantId)) throw new Error("Resumed objective rejection created unexpected state.");
+    if (pending.absentGrantId && knownIds.has(pending.absentGrantId)) throw new Error(`${pending.action} created unexpected state while resuming.`);
+    if (JSON.stringify(jsonSafe(state.canonical)) !== JSON.stringify(jsonSafe(pending.canonicalBefore))) {
+      throw new Error(`${pending.action} changed canonical state while resuming a rejection.`);
+    }
     file.expectedRejections.push({
       ...pending,
       finalizedAt: new Date().toISOString(), status: "FINALIZED", result: "REJECTED_UNCHANGED",
       receipt: safeReceiptProjection(finalized, pending.action, pending.transactionHash),
-      explorer: `${EXPLORER_URL}/tx/${pending.transactionHash}`, rejectedGrantAbsent: true,
+      explorer: `${EXPLORER_URL}/tx/${pending.transactionHash}`,
+      absentGrantVerified: pending.absentGrantId ? true : null,
+      canonicalAfter: state.canonical,
     });
     file.pendingTransaction = null;
     writeJson(LIFECYCLE_PATH, file);
@@ -745,8 +769,14 @@ function assertFinalLifecycle(state) {
   if (state.expansionStatus !== "DENIED" || field(canonical.expansionReview, "verdict") !== "EXPANSION") {
     throw new Error("Semantic expansion did not finalize as DENIED/EXPANSION.");
   }
-  if (state.ambiguousStatus !== "RETRYABLE" || !["AMBIGUOUS", "UNVERIFIABLE"].includes(field(canonical.ambiguousReview, "verdict"))) {
-    throw new Error("Ambiguous child did not remain non-authorizing and retryable.");
+  if (state.ambiguousStatus !== "AMBIGUOUS" || field(canonical.ambiguousReview, "verdict") !== "AMBIGUOUS") {
+    throw new Error("Ambiguous child did not remain terminal and non-authorizing.");
+  }
+  if (!state.ambiguousReviewRetryRejected || !state.ambiguousCopyRejected || canonical.ambiguousCopy !== null) {
+    throw new Error("Ambiguous authority definition was not locked across retries and child IDs.");
+  }
+  if (state.revisedStatus !== "ACTIVE" || field(canonical.revisedReview, "verdict") !== "ATTENUATED") {
+    throw new Error("Materially revised authority did not receive an independent review.");
   }
   if (!state.objectiveExpansionProved || state.accessBefore !== "ALLOWED" || state.accessAfter !== "ANCESTOR_INACTIVE") {
     throw new Error("Final objective-rejection/access consequence proof is incomplete.");
@@ -780,9 +810,13 @@ async function lifecycle() {
     "Authority may be used only to READ case-1 for activities permitted by the current customer care policy.",
     rootProhibition,
   );
+  const revisedClauses = clauses(
+    "Authority may be used only to READ case-1 to resolve exactly one assigned customer support ticket; no other purpose is permitted.",
+    rootProhibition,
+  );
 
   let state = await canonicalLifecycleState(file, clients, deployment);
-  for (let step = 0; step < 16; step += 1) {
+  for (let step = 0; step < 24; step += 1) {
     const action = selectNextLifecycleAction(state);
     if (action === "COMPLETE") {
       assertFinalLifecycle(state);
@@ -812,7 +846,7 @@ async function lifecycle() {
       });
     } else if (action === "PROVE_OBJECTIVE_REJECTION") {
       state = await executeExpectedRejection({
-        file, clients, deployment, action, functionName: "propose_child_grant", rejectedGrantId: file.ids.objectiveRejected,
+        file, clients, deployment, action, functionName: "propose_child_grant", absentGrantId: file.ids.objectiveRejected,
         args: [file.ids.root, file.ids.objectiveRejected, clients.principalAccount.address, "READ,WRITE", "case-1", validClauses, file.childExpiresAt, "demo-objective-reject-v1"], before: state,
       });
     } else if (action === "PROPOSE_VALID") {
@@ -836,6 +870,23 @@ async function lifecycle() {
       });
     } else if (action === "REVIEW_AMBIGUOUS") {
       state = await executeLifecycleWrite({ file, clients, deployment, action, actor: "delegate", functionName: "review_child_grant", args: [file.ids.ambiguous], before: state });
+    } else if (action === "REJECT_AMBIGUOUS_REVIEW_RETRY") {
+      state = await executeExpectedRejection({
+        file, clients, deployment, action, functionName: "review_child_grant",
+        args: [file.ids.ambiguous], before: state,
+      });
+    } else if (action === "REJECT_AMBIGUOUS_COPY") {
+      state = await executeExpectedRejection({
+        file, clients, deployment, action, functionName: "propose_child_grant", absentGrantId: file.ids.ambiguousCopy,
+        args: [file.ids.root, file.ids.ambiguousCopy, clients.principalAccount.address, "READ", "case-1", ambiguousClauses, file.childExpiresAt, "demo-propose-ambiguous-copy-v1"], before: state,
+      });
+    } else if (action === "PROPOSE_REVISED") {
+      state = await executeLifecycleWrite({
+        file, clients, deployment, action, actor: "delegate", functionName: "propose_child_grant",
+        args: [file.ids.root, file.ids.revised, clients.principalAccount.address, "READ", "case-1", revisedClauses, file.childExpiresAt, "demo-propose-revised-v1"], before: state,
+      });
+    } else if (action === "REVIEW_REVISED") {
+      state = await executeLifecycleWrite({ file, clients, deployment, action, actor: "delegate", functionName: "review_child_grant", args: [file.ids.revised], before: state });
     } else if (action === "CHECK_ACCESS_BEFORE") {
       state = { ...state, ...await recordAccessCheck(file, clients, deployment, "BEFORE_REVOKE", "ALLOWED") };
     } else if (action === "REVOKE_ROOT") {
@@ -844,7 +895,7 @@ async function lifecycle() {
       state = { ...state, ...await recordAccessCheck(file, clients, deployment, "AFTER_REVOKE", "ANCESTOR_INACTIVE") };
     }
   }
-  throw new Error("Lifecycle exceeded the bounded sixteen-step limit.");
+  throw new Error("Lifecycle exceeded the bounded twenty-four-step limit.");
 }
 
 
