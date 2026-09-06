@@ -34,11 +34,13 @@ class Review:
     expansion_clause_ids_csv: str
     ambiguous_clause_ids_csv: str
     reason_code: str
+    definition_fingerprint: str
 
 
 class GrantLattice(gl.Contract):
     grants: TreeMap[str, Grant]
     reviews: TreeMap[str, Review]
+    ambiguous_definitions: TreeMap[str, bool]
     used_nonces: TreeMap[str, bool]
     grant_ids: DynArray[str]
 
@@ -135,8 +137,7 @@ class GrantLattice(gl.Contract):
         if int(expires_at) > int(parent.expires_at):
             raise gl.vm.UserError("child expiry exceeds parent")
         nonce_key = self._require_unused_nonce(sender, "propose_child_grant", nonce)
-
-        self.grants[child_id] = Grant(
+        candidate = Grant(
             grant_id=child_id,
             parent_id=parent_id,
             root_principal=parent.root_principal,
@@ -152,6 +153,11 @@ class GrantLattice(gl.Contract):
             version=u256(1),
             status="PROPOSED",
         )
+        definition_fingerprint = self._authority_definition_fingerprint(candidate)
+        if definition_fingerprint in self.ambiguous_definitions:
+            raise gl.vm.UserError("authority definition is ambiguity-locked")
+
+        self.grants[child_id] = candidate
         self.grant_ids.append(child_id)
         self.used_nonces[nonce_key] = True
 
@@ -265,6 +271,8 @@ class GrantLattice(gl.Contract):
                 "DENIED",
             )
         elif ambiguous_csv != "":
+            definition_fingerprint = self._authority_definition_fingerprint(current_child)
+            self.ambiguous_definitions[definition_fingerprint] = True
             self._record_review(
                 current_child,
                 attempt,
@@ -272,7 +280,7 @@ class GrantLattice(gl.Contract):
                 "",
                 ambiguous_csv,
                 "AMBIGUOUS_CLAUSES",
-                "RETRYABLE",
+                "AMBIGUOUS",
             )
         else:
             self._record_review(
@@ -475,9 +483,27 @@ class GrantLattice(gl.Contract):
             expansion_clause_ids_csv=expansion_csv,
             ambiguous_clause_ids_csv=ambiguous_csv,
             reason_code=reason_code,
+            definition_fingerprint=self._authority_definition_fingerprint(child),
         )
         child.status = child_status
         self.grants[child.grant_id] = child
+
+    def _authority_definition_fingerprint(self, child: Grant) -> str:
+        fields = [
+            child.parent_id,
+            str(int(child.parent_version)),
+            self._address_key(child.grantee),
+            child.capabilities_csv,
+            child.resources_csv,
+            str(int(child.expires_at)),
+            str(int(child.depth)),
+            str(int(child.max_depth)),
+            child.clauses_json,
+        ]
+        encoded = ""
+        for field in fields:
+            encoded += str(len(field.encode("utf-8"))) + ":" + field
+        return Keccak256(encoded.encode("utf-8")).hexdigest()
 
     def _require_grant(self, grant_id: str) -> Grant:
         if grant_id not in self.grants:

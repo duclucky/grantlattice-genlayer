@@ -90,7 +90,7 @@ def test_expansion_is_denied_and_cannot_activate_access(
     assert contract.is_effective("child-1") is False
 
 
-def test_ambiguous_review_is_retryable_and_retry_uses_next_attempt(
+def test_ambiguous_review_is_terminal_and_cannot_be_retried(
     contract, direct_vm, direct_alice, direct_bob, direct_charlie
 ):
     deploy_proposed(contract, direct_vm, direct_alice, direct_bob, direct_charlie)
@@ -107,10 +107,115 @@ def test_ambiguous_review_is_retryable_and_retry_uses_next_attempt(
     contract.review_child_grant("child-1")
 
     first = contract.get_review("child-1")
-    assert contract.get_grant("child-1").status == "RETRYABLE"
+    assert contract.get_grant("child-1").status == "AMBIGUOUS"
     assert first.verdict == "AMBIGUOUS"
     assert first.ambiguous_clause_ids_csv == "purpose"
     assert first.reason_code == "AMBIGUOUS_CLAUSES"
+    assert len(first.definition_fingerprint) == 64
+    assert contract.is_effective("child-1") is False
+    assert (
+        contract.can_invoke("child-1", direct_charlie, "READ", "case-1")
+        == "GRANT_INACTIVE"
+    )
+
+    direct_vm.clear_mocks()
+    install_review(
+        direct_vm,
+        review_output(
+            {
+                "purpose": "NARROWER_OR_EQUAL",
+                "no-marketing": "NARROWER_OR_EQUAL",
+            },
+            attempt=2,
+        ),
+    )
+    with direct_vm.expect_revert("child is not reviewable"):
+        contract.review_child_grant("child-1")
+    assert int(contract.get_review("child-1").attempt) == 1
+    assert contract.get_grant("child-1").status == "AMBIGUOUS"
+
+
+def test_ambiguous_definition_is_locked_across_child_ids_but_material_change_is_reviewable(
+    contract, direct_vm, direct_alice, direct_bob, direct_charlie
+):
+    deploy_proposed(contract, direct_vm, direct_alice, direct_bob, direct_charlie)
+    install_review(
+        direct_vm,
+        review_output(
+            {
+                "purpose": "AMBIGUOUS",
+                "no-marketing": "NARROWER_OR_EQUAL",
+            }
+        ),
+    )
+    direct_vm.sender = direct_bob
+    contract.review_child_grant("child-1")
+    ambiguous_fingerprint = contract.get_review("child-1").definition_fingerprint
+
+    direct_vm.clear_mocks()
+    with direct_vm.expect_revert("authority definition is ambiguity-locked"):
+        propose_child(
+            contract,
+            direct_vm,
+            direct_bob,
+            direct_charlie,
+            child_id="child-copy",
+            nonce="reusable-after-rejection",
+        )
+    assert list(contract.list_grant_ids(0, 25)) == ["root-1", "child-1"]
+
+    materially_changed_clauses = clauses(
+        "Customer support for case 1 billing questions only",
+        "No marketing or resale",
+    )
+    propose_child(
+        contract,
+        direct_vm,
+        direct_bob,
+        direct_charlie,
+        child_id="child-revised",
+        clause_json=materially_changed_clauses,
+        nonce="reusable-after-rejection",
+    )
+    install_review(
+        direct_vm,
+        review_output(
+            {
+                "purpose": "NARROWER_OR_EQUAL",
+                "no-marketing": "NARROWER_OR_EQUAL",
+            },
+            child_id="child-revised",
+        ),
+    )
+    direct_vm.sender = direct_bob
+    contract.review_child_grant("child-revised")
+
+    revised = contract.get_review("child-revised")
+    assert contract.get_grant("child-revised").status == "ACTIVE"
+    assert revised.definition_fingerprint != ambiguous_fingerprint
+
+
+def test_unverifiable_review_is_retryable_and_valid_retry_can_activate(
+    contract, direct_vm, direct_alice, direct_bob, direct_charlie
+):
+    deploy_proposed(contract, direct_vm, direct_alice, direct_bob, direct_charlie)
+    install_review(
+        direct_vm,
+        {
+            "child_id": "child-1",
+            "attempt": 1,
+            "results": [
+                {"clause_id": "purpose", "classification": "NARROWER_OR_EQUAL"}
+            ],
+        },
+    )
+    direct_vm.sender = direct_bob
+    contract.review_child_grant("child-1")
+
+    first = contract.get_review("child-1")
+    assert first.verdict == "UNVERIFIABLE"
+    assert first.reason_code == "INVALID_REVIEW_OUTPUT"
+    assert contract.get_grant("child-1").status == "RETRYABLE"
 
     direct_vm.clear_mocks()
     install_review(
@@ -124,6 +229,7 @@ def test_ambiguous_review_is_retryable_and_retry_uses_next_attempt(
         ),
     )
     contract.review_child_grant("child-1")
+
     second = contract.get_review("child-1")
     assert int(second.attempt) == 2
     assert second.verdict == "ATTENUATED"
@@ -323,8 +429,8 @@ def test_prompt_injection_text_does_not_choose_consequence(
         ("N2", ("NARROWER_OR_EQUAL", "EXPANDS_AUTHORITY"), "DENIED"),
         ("N3", ("EXPANDS_AUTHORITY", "EXPANDS_AUTHORITY"), "DENIED"),
         ("N4", ("OBJECTIVE_REJECT", "OBJECTIVE_REJECT"), "ABSENT"),
-        ("B1", ("AMBIGUOUS", "NARROWER_OR_EQUAL"), "RETRYABLE"),
-        ("B2", ("NARROWER_OR_EQUAL", "AMBIGUOUS"), "RETRYABLE"),
+        ("B1", ("AMBIGUOUS", "NARROWER_OR_EQUAL"), "AMBIGUOUS"),
+        ("B2", ("NARROWER_OR_EQUAL", "AMBIGUOUS"), "AMBIGUOUS"),
         ("A1", ("EXPANDS_AUTHORITY", "AMBIGUOUS"), "DENIED"),
         ("A2", ("INVALID", "NARROWER_OR_EQUAL"), "RETRYABLE"),
     ],
