@@ -1,16 +1,17 @@
-# Judge remediation local verification
+# Judge remediation local verification (historical checkpoint)
 
-Status: **LOCAL PASS; PRECHECK 0 BLOCKER**
+Status: **HISTORICAL LOCAL PASS; superseded by
+`semantic-ambiguity-lock-local-verification.md`**
 
 Date: 2026-08-31
 
 ## Scope
 
-This local evidence covers the reviewer-requested actor-bound access check, strict
+This historical checkpoint covers the reviewer-requested actor-bound access check, strict
 transaction-time failure, explicit custom-validator error handling, and honest
-wallet-scoped visibility language. It does not claim that the actor-bound ABI is
-deployed to Studionet or production. The currently documented live address and
-its browser evidence predate this contract revision.
+wallet-scoped visibility language. It predates the semantic ambiguity lock and
+the active Studionet deployment; see the current local and Studionet evidence
+files for the final revision.
 
 ## Full project gate
 

@@ -137,10 +137,13 @@ All 14 gates still pass. No redesign trigger was found.
 3. [x] **FE-WALLET-EVM** — existing EIP-6963/injected provider selection,
    deliberate modal choice, EVM write path, separate IC proxy, address menu, and
    disconnect behavior remain covered by tests.
-4. [x] **FE-SURFACE** — primary UI exposes user-relevant grant state/actions and
+4. [x] **FE-WALLET-ACCOUNT** — the real adapter configures the selected account
+   in `createClient`, validates the destination/network, and covers the wallet
+   write path with intercepted SDK/provider I/O tests.
+5. [x] **FE-SURFACE** — primary UI exposes user-relevant grant state/actions and
    makes the public-onchain boundary explicit; validator/reviewer internals remain
    outside the primary surface.
-5. [x] **FE-PRODUCT** — all nine routes, persistent navigation, history/detail,
+6. [x] **FE-PRODUCT** — all nine routes, persistent navigation, history/detail,
    Help, integration guidance, and complete task/recovery states remain intact.
 
 ## Objective gate and uncertainties
@@ -151,7 +154,7 @@ Category: projects
 Precheck summary: 0 BLOCKER, 3 WARN, 5 auto-verified OK
 Dynamic: npm run check PASS; gltest PASS
 Git hygiene: OK
-Public CI: SUCCESS, run 33337312596
+Public CI: SUCCESS, run 34046195858 (commit `4b39c37`)
 ```
 
 The three warnings are reviewed heuristics: a zero-value guard reads

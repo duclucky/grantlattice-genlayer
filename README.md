@@ -64,11 +64,12 @@ The full locked specification and claim-to-code matrix are in
 ## Verified Evidence
 
 - GenVM lint: 3 checks passed; `GrantLattice` recognized with 9 methods.
-- Python/direct/static/parser tests: 70 passed.
+- Python/direct/static/parser tests: 72 passed.
 - Deployment helper tests: 8 passed.
-- Frontend tests: 145 passed across 27 files, plus TypeScript and production build.
+- Frontend tests: 149 passed across 27 files, plus TypeScript and production build.
 - Studionet lifecycle: root creation, deterministic widening rejection,
-  validator-controlled attenuation/expansion/ambiguity, allow, revocation, and
+  validator-controlled attenuation/expansion, terminal semantic ambiguity with
+  cross-ID fingerprint rejection, material revision, allow, revocation, and
   descendant denial all recorded with sanitized finalized evidence. A public-ID
   replay by the wrong actor returned `ACTOR_MISMATCH`.
 - Historical browser reads on the archived prior revision: deployed grant list and
@@ -83,7 +84,7 @@ See [`docs/evidence`](docs/evidence) for current command output, safe receipt
 projections, canonical reads, and honest evidence boundaries.
 
 - Public repository: [`duclucky/grantlattice-genlayer`](https://github.com/duclucky/grantlattice-genlayer)
-- Successful CI: [Windows verification run 33341042264](https://github.com/duclucky/grantlattice-genlayer/actions/runs/33341042264)
+- Successful CI: [Windows verification run 34046195858](https://github.com/duclucky/grantlattice-genlayer/actions/runs/34046195858)
 
 ## Run Locally
 
