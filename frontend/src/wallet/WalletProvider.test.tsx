@@ -1,11 +1,15 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { Eip1193Provider, WalletProviderInfo } from "./types";
 import { useWallet, WalletProvider } from "./WalletProvider";
 
 const account = "0x1111111111111111111111111111111111111111";
+
+afterEach(() => {
+  sessionStorage.clear();
+});
 
 function Harness() {
   const wallet = useWallet();
@@ -29,6 +33,8 @@ function fixture() {
   const listeners = new Map<string, (...args: unknown[]) => void>();
   const request = vi.fn(async ({ method }: { method: string }) => {
     if (method === "eth_requestAccounts") return [account];
+    if (method === "eth_accounts") return [account];
+    if (method === "eth_chainId") return "0xf22f";
     return null;
   });
   const provider: Eip1193Provider = {
@@ -64,7 +70,47 @@ describe("WalletProvider", () => {
     expect(request.mock.calls.map(([args]) => args.method)).toEqual([
       "wallet_switchEthereumChain",
       "eth_requestAccounts",
+      "eth_chainId",
     ]);
+  });
+
+  it("restores the deliberately selected provider silently after remount", async () => {
+    const { info, request } = fixture();
+    sessionStorage.setItem("grantlattice.wallet.provider.rdns", info.rdns);
+    const first = render(
+      <WalletProvider discover={async () => [info]}>
+        <Harness />
+      </WalletProvider>,
+    );
+
+    expect(await screen.findByText(account)).toBeInTheDocument();
+    expect(request.mock.calls.map(([args]) => args.method)).toEqual([
+      "eth_accounts",
+      "eth_chainId",
+    ]);
+    first.unmount();
+  });
+
+  it("keeps an explicit disconnect logged out across remount", async () => {
+    const user = userEvent.setup();
+    const { info } = fixture();
+    sessionStorage.setItem("grantlattice.wallet.provider.rdns", info.rdns);
+    const first = render(
+      <WalletProvider discover={async () => [info]}>
+        <Harness />
+      </WalletProvider>,
+    );
+    await screen.findByText(account);
+    await user.click(screen.getByRole("button", { name: "Disconnect" }));
+    first.unmount();
+
+    render(
+      <WalletProvider discover={async () => [info]}>
+        <Harness />
+      </WalletProvider>,
+    );
+    expect(await screen.findByText("Disconnected")).toBeInTheDocument();
+    expect(sessionStorage.getItem("grantlattice.wallet.provider.rdns")).toBeNull();
   });
 
   it("disconnects the session and removes selected-provider listeners", async () => {
