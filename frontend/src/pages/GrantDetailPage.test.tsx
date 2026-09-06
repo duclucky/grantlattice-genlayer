@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { ContractAdapterProvider } from "../adapters/ContractAdapterProvider";
 import type { GrantLatticeAdapter } from "../adapters/contract";
+import type { GrantRecord, ReviewRecord } from "../domain/types";
 import { canonicalTestAdapter } from "../test/canonicalTestAdapter";
 import { TransactionProvider } from "../transactions/TransactionProvider";
 import { WalletControls } from "../wallet/WalletControls";
@@ -95,5 +96,67 @@ describe("GrantDetailPage", () => {
 
     expect(await screen.findByText("Authority is not effective")).toBeInTheDocument();
     expect(getReview).not.toHaveBeenCalled();
+  });
+
+  it("treats semantic ambiguity as terminal and requires material revision", async () => {
+    const ambiguousGrant: GrantRecord = {
+      ...(await canonicalTestAdapter.getGrant("child-1") as GrantRecord),
+      grantor: account,
+      status: "AMBIGUOUS",
+      effective: false,
+    };
+    const ambiguousReview: ReviewRecord = {
+      childGrantId: "child-1",
+      attempt: 1,
+      verdict: "AMBIGUOUS",
+      expansionClauseIds: [],
+      ambiguousClauseIds: ["purpose"],
+      reason: "AMBIGUOUS_CLAUSES",
+      definitionFingerprint: "a".repeat(64),
+    };
+    const reviewChild = vi.fn(canonicalTestAdapter.reviewChild);
+    const adapter: GrantLatticeAdapter = {
+      ...canonicalTestAdapter,
+      listGrants: async () => [ambiguousGrant],
+      getReview: async () => ambiguousReview,
+      reviewChild,
+    };
+
+    renderDetail("/grants/child-1", adapter);
+    await connectWallet();
+
+    expect(await screen.findByText("Semantic ambiguity is locked")).toBeInTheDocument();
+    expect(screen.getByText(/materially revise the policy or scope/iu)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Request semantic review" })).not.toBeInTheDocument();
+    expect(reviewChild).not.toHaveBeenCalled();
+  });
+
+  it("keeps review available for a technical retryable failure", async () => {
+    const retryableGrant: GrantRecord = {
+      ...(await canonicalTestAdapter.getGrant("child-1") as GrantRecord),
+      grantor: account,
+      status: "RETRYABLE",
+      effective: false,
+    };
+    const retryableReview: ReviewRecord = {
+      childGrantId: "child-1",
+      attempt: 1,
+      verdict: "UNVERIFIABLE",
+      expansionClauseIds: [],
+      ambiguousClauseIds: [],
+      reason: "INVALID_REVIEW_OUTPUT",
+      definitionFingerprint: "b".repeat(64),
+    };
+    const adapter: GrantLatticeAdapter = {
+      ...canonicalTestAdapter,
+      listGrants: async () => [retryableGrant],
+      getReview: async () => retryableReview,
+    };
+
+    renderDetail("/grants/child-1", adapter);
+    await connectWallet();
+
+    expect(await screen.findByText("Technical review did not complete")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Request semantic review" })).toBeEnabled();
   });
 });

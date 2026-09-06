@@ -10,7 +10,8 @@ import type { GrantStatus } from "../domain/types";
 const copy: Record<GrantStatus, string> = {
   ACTIVE: "Active authority",
   PROPOSED: "Awaiting review",
-  RETRYABLE: "Needs another review",
+  RETRYABLE: "Technical retry available",
+  AMBIGUOUS: "Ambiguous definition",
   DENIED: "Broader than parent",
   REVOKED: "Revoked",
 };

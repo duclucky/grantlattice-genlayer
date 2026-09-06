@@ -103,6 +103,51 @@ describe("createGenLayerAdapter", () => {
     });
   });
 
+  it("maps the contract-derived ambiguity fingerprint without trusting frontend input", async () => {
+    const { readClient, walletSession } = fixture();
+    readClient.readContract = vi.fn(async ({ functionName }: { functionName: string }) => {
+      if (functionName !== "get_review") throw new Error(`unexpected read ${functionName}`);
+      return {
+        child_id: "child-1",
+        attempt: 1,
+        verdict: "AMBIGUOUS",
+        expansion_clause_ids_csv: "",
+        ambiguous_clause_ids_csv: "purpose",
+        reason_code: "AMBIGUOUS_CLAUSES",
+        definition_fingerprint: "a".repeat(64),
+      };
+    });
+    const adapter = createGenLayerAdapter(readClient, walletSession, config);
+
+    await expect(adapter.getReview("child-1")).resolves.toEqual({
+      childGrantId: "child-1",
+      attempt: 1,
+      verdict: "AMBIGUOUS",
+      expansionClauseIds: [],
+      ambiguousClauseIds: ["purpose"],
+      reason: "AMBIGUOUS_CLAUSES",
+      definitionFingerprint: "a".repeat(64),
+    });
+  });
+
+  it("fails closed when a canonical review fingerprint is malformed", async () => {
+    const { readClient, walletSession } = fixture();
+    readClient.readContract = vi.fn(async () => ({
+      child_id: "child-1",
+      attempt: 1,
+      verdict: "AMBIGUOUS",
+      expansion_clause_ids_csv: "",
+      ambiguous_clause_ids_csv: "purpose",
+      reason_code: "AMBIGUOUS_CLAUSES",
+      definition_fingerprint: "not-a-digest",
+    }));
+    const adapter = createGenLayerAdapter(readClient, walletSession, config);
+
+    await expect(adapter.getReview("child-1")).rejects.toThrow(
+      "Canonical definition fingerprint is invalid.",
+    );
+  });
+
   it("uses paginated canonical IDs and resolves each grant through get_grant", async () => {
     const { readClient, readContract, walletSession } = fixture();
     const adapter = createGenLayerAdapter(readClient, walletSession, config);

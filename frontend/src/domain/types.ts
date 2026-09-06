@@ -4,6 +4,7 @@ export type GrantStatus =
   | "ACTIVE"
   | "PROPOSED"
   | "RETRYABLE"
+  | "AMBIGUOUS"
   | "DENIED"
   | "REVOKED";
 
@@ -51,6 +52,7 @@ export interface ReviewRecord {
   expansionClauseIds: string[];
   ambiguousClauseIds: string[];
   reason: string;
+  definitionFingerprint: string;
 }
 
 export type AccessReason =

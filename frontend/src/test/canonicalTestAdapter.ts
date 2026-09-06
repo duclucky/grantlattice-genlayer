@@ -78,6 +78,7 @@ const childReview: ReviewRecord = {
   expansionClauseIds: [],
   ambiguousClauseIds: [],
   reason: "Review has not finalized",
+  definitionFingerprint: "0".repeat(64),
 };
 
 function finalizedWrite(hash: string): WriteRequest {

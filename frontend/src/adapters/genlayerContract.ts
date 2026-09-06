@@ -64,6 +64,7 @@ const GRANT_STATUSES = new Set<GrantStatus>([
   "ACTIVE",
   "PROPOSED",
   "RETRYABLE",
+  "AMBIGUOUS",
   "DENIED",
   "REVOKED",
 ]);
@@ -170,6 +171,14 @@ function mapReview(value: unknown): ReviewRecord {
   const raw = record(value);
   const verdict = stringField(raw, "verdict", "verdict") as ReviewVerdict;
   if (!REVIEW_VERDICTS.has(verdict)) throw new Error("Canonical review verdict is invalid.");
+  const definitionFingerprint = stringField(
+    raw,
+    "definition_fingerprint",
+    "definitionFingerprint",
+  );
+  if (!/^[a-fA-F0-9]{64}$/u.test(definitionFingerprint)) {
+    throw new Error("Canonical definition fingerprint is invalid.");
+  }
   return {
     childGrantId: stringField(raw, "child_id", "childId"),
     attempt: numberField(raw, "attempt", "attempt"),
@@ -177,6 +186,7 @@ function mapReview(value: unknown): ReviewRecord {
     expansionClauseIds: csv(stringField(raw, "expansion_clause_ids_csv", "expansionClauseIdsCsv")),
     ambiguousClauseIds: csv(stringField(raw, "ambiguous_clause_ids_csv", "ambiguousClauseIdsCsv")),
     reason: stringField(raw, "reason_code", "reasonCode"),
+    definitionFingerprint,
   };
 }
 

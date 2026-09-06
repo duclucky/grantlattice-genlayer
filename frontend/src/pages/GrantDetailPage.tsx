@@ -101,6 +101,20 @@ export function GrantDetailPage() {
   const canRevoke = walletReady
     && grant.status !== "REVOKED"
     && (account === grant.grantor.toLowerCase() || account === grant.rootPrincipal.toLowerCase());
+  const authorityTitle = grant.effective
+    ? "Authority is effective"
+    : grant.status === "AMBIGUOUS"
+      ? "Semantic ambiguity is locked"
+      : grant.status === "RETRYABLE"
+        ? "Technical review did not complete"
+        : "Authority is not effective";
+  const authorityDescription = grant.effective
+    ? "Consumers may still check an exact capability and resource before execution."
+    : grant.status === "AMBIGUOUS"
+      ? "This canonical definition cannot authorize or be reviewed again. Materially revise the policy or scope and create a new proposal."
+      : grant.status === "RETRYABLE"
+        ? "The previous review was technically unverifiable. Authority remains inactive, but the recorded grantor may request another review."
+        : "This grant cannot authorize an action until its state and entire ancestor chain are effective.";
 
   return (
     <div className="page">
@@ -120,12 +134,8 @@ export function GrantDetailPage() {
       <section className="outcome-panel" aria-labelledby="authority-title">
         <ShieldCheckIcon aria-hidden="true" size={28} weight="duotone" />
         <div>
-          <h2 id="authority-title">{grant.effective ? "Authority is effective" : "Authority is not effective"}</h2>
-          <p>
-            {grant.effective
-              ? "Consumers may still check an exact capability and resource before execution."
-              : "This grant cannot authorize an action until its state and entire ancestor chain are effective."}
-          </p>
+          <h2 id="authority-title">{authorityTitle}</h2>
+          <p>{authorityDescription}</p>
         </div>
       </section>
 
