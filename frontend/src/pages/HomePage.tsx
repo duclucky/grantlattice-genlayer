@@ -57,6 +57,22 @@ export function HomePage() {
           </article>
         </div>
       </section>
+
+      <section className="section-block" aria-labelledby="test-path-title">
+        <div className="section-heading">
+          <p className="kicker">Observable contract journey</p>
+          <h2 id="test-path-title">Test the contract end to end</h2>
+          <p>Each write requests a wallet signature, sends 0 GEN, and links to its real Studionet transaction.</p>
+        </div>
+        <ol className="workflow-steps">
+          <li><strong>Connect</strong><span>Select OKX or another injected wallet and switch to Studionet.</span></li>
+          <li><strong>Create</strong><span>Establish a root grant that defines the maximum authority.</span></li>
+          <li><strong>Delegate</strong><span>Create a child inside the displayed parent boundary.</span></li>
+          <li><strong>Review</strong><span>Ask validators to compare every child policy clause.</span></li>
+          <li><strong>Check</strong><span>Test one exact actor, capability, and resource before execution.</span></li>
+          <li><strong>Verify</strong><span>Open Activity and Explorer to confirm the canonical result.</span></li>
+        </ol>
+      </section>
     </div>
   );
 }

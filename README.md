@@ -26,8 +26,10 @@ agree on one of three bounded meanings:
 
 - `NARROWER_OR_EQUAL`: every clause safely attenuates, so the child activates.
 - `EXPANDS_AUTHORITY`: at least one clause is broader, so the child is denied.
-- `AMBIGUOUS`: meaning is not safe to settle, so the exact canonical definition
-  remains inactive and is permanently locked against semantic re-review.
+- `AMBIGUOUS`: meaning is not safe to settle, so every ambiguous parent/child
+  clause pair remains inactive and locked until that clause text is revised.
+  Changing expiry, grantee, objective scope, child ID, clause order, or whitespace
+  does not create another semantic attempt.
 - `UNVERIFIABLE`: the validator execution or output could not be verified, so
   the inactive child may be retried without treating failure as authority.
 
@@ -54,9 +56,21 @@ connected wallet -> /api/activity -> allowlisted public Studionet tx projection
 - Deterministic settlement invariants reject missing, extra, duplicate, invalid,
   or semantically inconsistent validator output before hard state changes.
 - The React/Vite frontend deliberately lists detected EVM wallets, keeps wallet
-  writes separate from IC reads, reports accepted/finalized/failure/retry states,
+  writes separate from IC reads, distinguishes wallet-signature waiting from a
+  submitted transaction, reports accepted/finalized/failure/retry states,
   reloads canonical state only after finalization, and restores the connected
   wallet's allowlisted transaction history after a reload or return visit.
+
+## Test the App
+
+1. Connect an injected wallet and switch to GenLayer Studionet (`61999`).
+2. Create a root grant; the UI shows `create_root_grant`, `0 GEN`, the target
+   contract, signature status, transaction hash, and Explorer link.
+3. Open the root and delegate a child inside the displayed canonical parent limits.
+4. As the recorded grantor, request semantic review from the child detail page.
+5. Use **Access check** for the exact connected actor, capability, and resource.
+6. Use **Activity** and the persistent contract reference to verify the public
+   Studionet transaction and canonical result.
 
 The full locked specification and claim-to-code matrix are in
 [`docs/README.md`](docs/README.md).
@@ -64,12 +78,12 @@ The full locked specification and claim-to-code matrix are in
 ## Verified Evidence
 
 - GenVM lint: 3 checks passed; `GrantLattice` recognized with 9 methods.
-- Python/direct/static/parser tests: 72 passed.
+- Python/direct/static/parser tests: 81 passed.
 - Deployment helper tests: 8 passed.
-- Frontend tests: 151 passed across 27 files, plus TypeScript and production build.
+- Frontend tests: 156 passed across 28 files, plus TypeScript and production build.
 - Studionet lifecycle: root creation, deterministic widening rejection,
   validator-controlled attenuation/expansion, terminal semantic ambiguity with
-  cross-ID fingerprint rejection, material revision, allow, revocation, and
+  cross-ID rejection, material revision, allow, revocation, and
   descendant denial all recorded with sanitized finalized evidence. A public-ID
   replay by the wrong actor returned `ACTOR_MISMATCH`.
 - Current production browser-wallet lifecycle: OKX-signed root creation,
@@ -158,11 +172,13 @@ patterns; it does not claim external adoption.
   the connected wallet and active contract; the UI is not a confidentiality
   boundary.
 - The actor-bound ABI and fail-closed time/validator changes are deployed and
-  lifecycle-proven on Studionet. The production bundle and same-origin RPC use
-  the active contract address listed above.
+  lifecycle-proven on Studionet. The clause-pair ambiguity lock described above
+  is verified locally and requires a new contract deployment before it can be
+  claimed for the active address listed above.
 - The validator judges authored policy meaning, not external real-world truth;
-  ambiguity intentionally remains inactive and terminal for the exact canonical
-  definition, while only technical unverifiability is retryable.
+  ambiguity intentionally remains inactive and terminal for an unchanged
+  semantic parent/child clause pair, while only technical unverifiability is
+  retryable without a clause revision.
 - V1 is bounded to 8 clauses, 16 capabilities/resources, and delegation depth 8.
 - A2A, MCP, and Google ADK are documented integration patterns, not deployed adopters.
 - No value, fee, bond, reward, escrow, payout, or credit path exists.

@@ -10,9 +10,13 @@ export function HelpPage() {
         <summary>Why is a child awaiting review?</summary>
         <p>A proposed child is inactive until objective checks and semantic attenuation both finalize successfully.</p>
       </details>
+      <details open>
+        <summary>What happens after semantic ambiguity?</summary>
+        <p>Semantic ambiguity is terminal for the recorded parent/child clause pair. Changing expiry, grantee, scope, child ID, or formatting does not unlock it; revise the ambiguous clause itself.</p>
+      </details>
       <details>
-        <summary>What does needs another review mean?</summary>
-        <p>The validator result was ambiguous, unavailable, or invalid. No child authority was issued.</p>
+        <summary>When can a review be retried?</summary>
+        <p>A technical or unverifiable failure is retryable because no semantic classification completed. The grant remains inactive during every retry.</p>
       </details>
       <details>
         <summary>What happens after revocation or expiry?</summary>

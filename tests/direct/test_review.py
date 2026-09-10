@@ -153,7 +153,7 @@ def test_ambiguous_definition_is_locked_across_child_ids_but_material_change_is_
     ambiguous_fingerprint = contract.get_review("child-1").definition_fingerprint
 
     direct_vm.clear_mocks()
-    with direct_vm.expect_revert("authority definition is ambiguity-locked"):
+    with direct_vm.expect_revert("ambiguous clause is locked"):
         propose_child(
             contract,
             direct_vm,
@@ -193,6 +193,269 @@ def test_ambiguous_definition_is_locked_across_child_ids_but_material_change_is_
     revised = contract.get_review("child-revised")
     assert contract.get_grant("child-revised").status == "ACTIVE"
     assert revised.definition_fingerprint != ambiguous_fingerprint
+
+
+def test_ambiguous_clause_cannot_retry_after_expiry_only_change(
+    contract, direct_vm, direct_alice, direct_bob, direct_charlie
+):
+    deploy_proposed(contract, direct_vm, direct_alice, direct_bob, direct_charlie)
+    install_review(
+        direct_vm,
+        review_output(
+            {
+                "purpose": "AMBIGUOUS",
+                "no-marketing": "NARROWER_OR_EQUAL",
+            }
+        ),
+    )
+    direct_vm.sender = direct_bob
+    contract.review_child_grant("child-1")
+
+    direct_vm.clear_mocks()
+    with direct_vm.expect_revert("ambiguous clause is locked"):
+        propose_child(
+            contract,
+            direct_vm,
+            direct_bob,
+            direct_charlie,
+            child_id="child-expiry-copy",
+            expires_at=NOW + 600,
+            nonce="retryable-after-lock-rejection",
+        )
+
+    assert list(contract.list_grant_ids(0, 25)) == ["root-1", "child-1"]
+
+    revised_clauses = clauses(
+        "Customer support for case 1 billing questions only",
+        "No marketing or resale",
+    )
+    propose_child(
+        contract,
+        direct_vm,
+        direct_bob,
+        direct_charlie,
+        child_id="child-after-rejection",
+        clause_json=revised_clauses,
+        expires_at=NOW + 600,
+        nonce="retryable-after-lock-rejection",
+    )
+    assert contract.get_grant("child-after-rejection").status == "PROPOSED"
+
+
+@pytest.mark.parametrize(
+    ("overrides", "child_grantee_fixture"),
+    [
+        ({"capabilities": "SUMMARIZE"}, "charlie"),
+        ({"resources": "case-2"}, "charlie"),
+        ({}, "alice"),
+    ],
+)
+def test_ambiguous_clause_cannot_retry_after_unrelated_authority_change(
+    contract,
+    direct_vm,
+    direct_alice,
+    direct_bob,
+    direct_charlie,
+    overrides,
+    child_grantee_fixture,
+):
+    deploy_proposed(contract, direct_vm, direct_alice, direct_bob, direct_charlie)
+    install_review(
+        direct_vm,
+        review_output(
+            {
+                "purpose": "AMBIGUOUS",
+                "no-marketing": "NARROWER_OR_EQUAL",
+            }
+        ),
+    )
+    direct_vm.sender = direct_bob
+    contract.review_child_grant("child-1")
+
+    next_grantee = direct_alice if child_grantee_fixture == "alice" else direct_charlie
+    direct_vm.clear_mocks()
+    with direct_vm.expect_revert("ambiguous clause is locked"):
+        propose_child(
+            contract,
+            direct_vm,
+            direct_bob,
+            next_grantee,
+            child_id="child-unrelated-copy",
+            nonce="unrelated-copy-nonce",
+            **overrides,
+        )
+
+
+def test_changing_only_non_ambiguous_clause_does_not_unlock_ambiguous_clause(
+    contract, direct_vm, direct_alice, direct_bob, direct_charlie
+):
+    deploy_proposed(contract, direct_vm, direct_alice, direct_bob, direct_charlie)
+    install_review(
+        direct_vm,
+        review_output(
+            {
+                "purpose": "AMBIGUOUS",
+                "no-marketing": "NARROWER_OR_EQUAL",
+            }
+        ),
+    )
+    direct_vm.sender = direct_bob
+    contract.review_child_grant("child-1")
+
+    changed_other_clause = clauses(
+        "Customer support for case 1 only",
+        "No marketing, resale, or audience profiling",
+    )
+    direct_vm.clear_mocks()
+    with direct_vm.expect_revert("ambiguous clause is locked"):
+        propose_child(
+            contract,
+            direct_vm,
+            direct_bob,
+            direct_charlie,
+            child_id="child-other-clause",
+            clause_json=changed_other_clause,
+            nonce="other-clause-nonce",
+        )
+
+
+def test_reordering_identical_clauses_does_not_unlock_ambiguous_clause(
+    contract, direct_vm, direct_alice, direct_bob, direct_charlie
+):
+    deploy_proposed(contract, direct_vm, direct_alice, direct_bob, direct_charlie)
+    install_review(
+        direct_vm,
+        review_output(
+            {
+                "purpose": "AMBIGUOUS",
+                "no-marketing": "NARROWER_OR_EQUAL",
+            }
+        ),
+    )
+    direct_vm.sender = direct_bob
+    contract.review_child_grant("child-1")
+
+    reordered = json.dumps(
+        list(reversed(json.loads(clauses(
+            "Customer support for case 1 only",
+            "No marketing or resale",
+        )))),
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    direct_vm.clear_mocks()
+    with direct_vm.expect_revert("ambiguous clause is locked"):
+        propose_child(
+            contract,
+            direct_vm,
+            direct_bob,
+            direct_charlie,
+            child_id="child-reordered",
+            clause_json=reordered,
+            nonce="reordered-nonce",
+        )
+
+
+def test_every_ambiguous_clause_must_change_before_reconsideration(
+    contract, direct_vm, direct_alice, direct_bob, direct_charlie
+):
+    deploy_proposed(contract, direct_vm, direct_alice, direct_bob, direct_charlie)
+    install_review(
+        direct_vm,
+        review_output(
+            {
+                "purpose": "AMBIGUOUS",
+                "no-marketing": "AMBIGUOUS",
+            }
+        ),
+    )
+    direct_vm.sender = direct_bob
+    contract.review_child_grant("child-1")
+
+    one_clause_revised = clauses(
+        "Customer support for case 1 billing questions only",
+        "No marketing or resale",
+    )
+    direct_vm.clear_mocks()
+    with direct_vm.expect_revert("ambiguous clause is locked"):
+        propose_child(
+            contract,
+            direct_vm,
+            direct_bob,
+            direct_charlie,
+            child_id="child-partial-revision",
+            clause_json=one_clause_revised,
+            nonce="partial-revision-nonce",
+        )
+
+
+def test_whitespace_only_edit_does_not_unlock_ambiguous_clause(
+    contract, direct_vm, direct_alice, direct_bob, direct_charlie
+):
+    deploy_proposed(contract, direct_vm, direct_alice, direct_bob, direct_charlie)
+    install_review(
+        direct_vm,
+        review_output(
+            {
+                "purpose": "AMBIGUOUS",
+                "no-marketing": "NARROWER_OR_EQUAL",
+            }
+        ),
+    )
+    direct_vm.sender = direct_bob
+    contract.review_child_grant("child-1")
+
+    formatting_only = clauses(
+        "  Customer  support for case 1 only  ",
+        "No marketing or resale",
+    )
+    direct_vm.clear_mocks()
+    with direct_vm.expect_revert("ambiguous clause is locked"):
+        propose_child(
+            contract,
+            direct_vm,
+            direct_bob,
+            direct_charlie,
+            child_id="child-formatting-only",
+            clause_json=formatting_only,
+            nonce="formatting-only-nonce",
+        )
+
+
+def test_ambiguous_clause_is_locked_when_expansion_controls_overall_verdict(
+    contract, direct_vm, direct_alice, direct_bob, direct_charlie
+):
+    deploy_proposed(contract, direct_vm, direct_alice, direct_bob, direct_charlie)
+    install_review(
+        direct_vm,
+        review_output(
+            {
+                "purpose": "AMBIGUOUS",
+                "no-marketing": "EXPANDS_AUTHORITY",
+            }
+        ),
+    )
+    direct_vm.sender = direct_bob
+    contract.review_child_grant("child-1")
+    first = contract.get_review("child-1")
+    assert first.verdict == "EXPANSION"
+    assert first.ambiguous_clause_ids_csv == "purpose"
+
+    expansion_revised = clauses(
+        "Customer support for case 1 only",
+        "No marketing, resale, or audience profiling",
+    )
+    direct_vm.clear_mocks()
+    with direct_vm.expect_revert("ambiguous clause is locked"):
+        propose_child(
+            contract,
+            direct_vm,
+            direct_bob,
+            direct_charlie,
+            child_id="child-expansion-revised",
+            clause_json=expansion_revised,
+            nonce="expansion-revised-nonce",
+        )
 
 
 def test_unverifiable_review_is_retryable_and_valid_retry_can_activate(

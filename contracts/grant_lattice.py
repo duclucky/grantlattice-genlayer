@@ -40,7 +40,7 @@ class Review:
 class GrantLattice(gl.Contract):
     grants: TreeMap[str, Grant]
     reviews: TreeMap[str, Review]
-    ambiguous_definitions: TreeMap[str, bool]
+    ambiguous_clause_pairs: TreeMap[str, bool]
     used_nonces: TreeMap[str, bool]
     grant_ids: DynArray[str]
 
@@ -153,9 +153,7 @@ class GrantLattice(gl.Contract):
             version=u256(1),
             status="PROPOSED",
         )
-        definition_fingerprint = self._authority_definition_fingerprint(candidate)
-        if definition_fingerprint in self.ambiguous_definitions:
-            raise gl.vm.UserError("authority definition is ambiguity-locked")
+        self._require_ambiguous_clauses_revised(parent, child_clauses)
 
         self.grants[child_id] = candidate
         self.grant_ids.append(child_id)
@@ -260,6 +258,12 @@ class GrantLattice(gl.Contract):
 
         expansion_csv = ",".join(expansion_ids)
         ambiguous_csv = ",".join(ambiguous_ids)
+        if ambiguous_csv != "":
+            self._lock_ambiguous_clause_pairs(
+                current_parent,
+                current_child,
+                ambiguous_ids,
+            )
         if expansion_csv != "":
             self._record_review(
                 current_child,
@@ -271,8 +275,6 @@ class GrantLattice(gl.Contract):
                 "DENIED",
             )
         elif ambiguous_csv != "":
-            definition_fingerprint = self._authority_definition_fingerprint(current_child)
-            self.ambiguous_definitions[definition_fingerprint] = True
             self._record_review(
                 current_child,
                 attempt,
@@ -504,6 +506,75 @@ class GrantLattice(gl.Contract):
         for field in fields:
             encoded += str(len(field.encode("utf-8"))) + ":" + field
         return Keccak256(encoded.encode("utf-8")).hexdigest()
+
+    def _require_ambiguous_clauses_revised(self, parent: Grant, child_clauses) -> None:
+        parent_by_id = self._clauses_by_id(self._parse_clauses(parent.clauses_json))
+        for child_clause in child_clauses:
+            parent_clause = parent_by_id[child_clause["id"]]
+            key = self._ambiguous_clause_pair_key(
+                parent.root_principal,
+                parent_clause,
+                child_clause,
+            )
+            if key in self.ambiguous_clause_pairs:
+                raise gl.vm.UserError("ambiguous clause is locked")
+
+    def _lock_ambiguous_clause_pairs(
+        self,
+        parent: Grant,
+        child: Grant,
+        ambiguous_ids,
+    ) -> None:
+        parent_by_id = self._clauses_by_id(self._parse_clauses(parent.clauses_json))
+        child_by_id = self._clauses_by_id(self._parse_clauses(child.clauses_json))
+        for clause_id in ambiguous_ids:
+            key = self._ambiguous_clause_pair_key(
+                parent.root_principal,
+                parent_by_id[clause_id],
+                child_by_id[clause_id],
+            )
+            self.ambiguous_clause_pairs[key] = True
+
+    def _ambiguous_clause_pair_key(
+        self,
+        root_principal: Address,
+        parent_clause,
+        child_clause,
+    ) -> str:
+        fields = [
+            "GRANTLATTICE_AMBIGUITY_CLAUSE_PAIR_V1",
+            self._address_key(root_principal),
+            parent_clause["id"],
+            parent_clause["kind"],
+            self._normalize_semantic_text(parent_clause["text"]),
+            child_clause["id"],
+            child_clause["kind"],
+            self._normalize_semantic_text(child_clause["text"]),
+        ]
+        encoded = ""
+        for field in fields:
+            encoded += str(len(field.encode("utf-8"))) + ":" + field
+        return Keccak256(encoded.encode("utf-8")).hexdigest()
+
+    def _normalize_semantic_text(self, value: str) -> str:
+        normalized = ""
+        pending_space = False
+        for char in value:
+            if char == " ":
+                if normalized != "":
+                    pending_space = True
+            else:
+                if pending_space:
+                    normalized += " "
+                    pending_space = False
+                normalized += char
+        return normalized
+
+    def _clauses_by_id(self, clauses):
+        result = {}
+        for clause in clauses:
+            result[clause["id"]] = clause
+        return result
 
     def _require_grant(self, grant_id: str) -> Grant:
         if grant_id not in self.grants:

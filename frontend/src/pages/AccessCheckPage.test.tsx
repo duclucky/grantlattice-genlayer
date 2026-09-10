@@ -12,7 +12,7 @@ import { TransactionProvider } from "../transactions/TransactionProvider";
 import { WalletProvider } from "../wallet/WalletProvider";
 import type { Eip1193Provider, WalletProviderInfo } from "../wallet/types";
 
-function renderAccess(adapter: GrantLatticeAdapter) {
+function renderAccess(adapter: GrantLatticeAdapter, route = "/checks") {
   const request = vi.fn(async ({ method }: { method: string }) =>
     method === "eth_requestAccounts" ? [parentGrantee] : null,
   );
@@ -25,7 +25,7 @@ function renderAccess(adapter: GrantLatticeAdapter) {
     selected: false,
   };
   render(
-    <MemoryRouter initialEntries={["/checks"]}>
+    <MemoryRouter initialEntries={[route]}>
       <WalletProvider discover={async () => [info]}>
         <ContractAdapterProvider adapter={adapter}>
           <TransactionProvider>
@@ -55,6 +55,17 @@ async function submitCheck(
 }
 
 describe("AccessCheckPage", () => {
+  it("prefills a deep-linked grant, capability, and resource", () => {
+    renderAccess(
+      unconfiguredContract,
+      "/checks?grant=child-1&capability=READ&resource=case-1",
+    );
+
+    expect(screen.getByLabelText("Grant ID")).toHaveValue("child-1");
+    expect(screen.getByLabelText("Capability ID")).toHaveValue("READ");
+    expect(screen.getByLabelText("Resource ID")).toHaveValue("case-1");
+  });
+
   it("disables the canonical check until a wallet actor is connected", async () => {
     const canInvoke = vi.fn();
     renderAccess({ ...unconfiguredContract, canInvoke });
@@ -110,5 +121,21 @@ describe("AccessCheckPage", () => {
       await screen.findByText("Authority could not be verified"),
     ).toBeInTheDocument();
     expect(screen.queryByText("Action allowed")).not.toBeInTheDocument();
+  });
+
+  it("offers a bounded retry after a failed canonical read", async () => {
+    const user = userEvent.setup();
+    const canInvoke = vi.fn()
+      .mockRejectedValueOnce(new Error("offline"))
+      .mockResolvedValueOnce({ allowed: true, reason: "ALLOWED" as const });
+    renderAccess({ ...unconfiguredContract, canInvoke });
+    await connectWallet(user);
+    await submitCheck(user, "root-1", "READ", "case-1");
+
+    expect(await screen.findByText("Authority could not be verified")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Retry canonical read" }));
+
+    expect(await screen.findByText("Action allowed")).toBeInTheDocument();
+    expect(canInvoke).toHaveBeenCalledTimes(2);
   });
 });

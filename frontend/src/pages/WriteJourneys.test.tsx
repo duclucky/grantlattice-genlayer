@@ -67,6 +67,18 @@ async function connect(user: ReturnType<typeof userEvent.setup>) {
 
 
 describe("real write journey controls", () => {
+  it("shows the live contract reference and an end-to-end test path", () => {
+    setup("/", principal, canonicalTestAdapter);
+
+    expect(screen.getByRole("heading", { name: "Test the contract end to end" })).toBeInTheDocument();
+    const contractLink = screen.getByRole("link", { name: /view contract in explorer/i });
+    expect(contractLink).toHaveAttribute(
+      "href",
+      `https://explorer-studio.genlayer.com/address/${activityConfig.contractAddress}`,
+    );
+    expect(screen.getByText(/GenLayer Studionet · Chain 61999/)).toBeInTheDocument();
+  });
+
   it("does not read parent authority before wallet connection", async () => {
     const getGrant = vi.fn(canonicalTestAdapter.getGrant);
     const listGrants = vi.fn(canonicalTestAdapter.listGrants);
@@ -135,6 +147,10 @@ describe("real write journey controls", () => {
       proposeChild,
     });
     await connect(user);
+
+    expect(await screen.findByRole("heading", { name: "Canonical parent boundary" })).toBeInTheDocument();
+    expect(screen.getByText(/Customer support only/)).toBeInTheDocument();
+    expect(screen.getByText(/Maximum depth 3/)).toBeInTheDocument();
 
     await user.type(screen.getByLabelText(/Child grant ID/i), "child-ui");
     await user.type(

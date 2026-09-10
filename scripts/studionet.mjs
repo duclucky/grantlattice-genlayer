@@ -212,7 +212,8 @@ export function selectNextLifecycleAction(state) {
   if (state.rootStatus === "ACTIVE" && state.ambiguousStatus === "PROPOSED") return "REVIEW_AMBIGUOUS";
   if (state.rootStatus === "ACTIVE" && state.ambiguousStatus === "AMBIGUOUS" && !state.ambiguousReviewRetryRejected) return "REJECT_AMBIGUOUS_REVIEW_RETRY";
   if (state.rootStatus === "ACTIVE" && state.ambiguousStatus === "AMBIGUOUS" && state.ambiguousReviewRetryRejected && !state.ambiguousCopyRejected) return "REJECT_AMBIGUOUS_COPY";
-  if (state.rootStatus === "ACTIVE" && state.ambiguousCopyRejected && !state.revisedStatus) return "PROPOSE_REVISED";
+  if (state.rootStatus === "ACTIVE" && state.ambiguousCopyRejected && !state.ambiguousUnrelatedRejected) return "REJECT_AMBIGUOUS_UNRELATED_CHANGE";
+  if (state.rootStatus === "ACTIVE" && state.ambiguousUnrelatedRejected && !state.revisedStatus) return "PROPOSE_REVISED";
   if (state.rootStatus === "ACTIVE" && state.revisedStatus === "PROPOSED") return "REVIEW_REVISED";
   if (state.rootStatus === "ACTIVE" && state.revisedStatus === "ACTIVE" && state.accessBefore == null) return "CHECK_ACCESS_BEFORE";
   if (state.rootStatus === "ACTIVE" && state.accessBefore === "ALLOWED") return "REVOKE_ROOT";
@@ -564,6 +565,7 @@ function newLifecycleFile(deployment, clients) {
       expansion: "grantlattice-expansion-v1",
       ambiguous: "grantlattice-ambiguous-v1",
       ambiguousCopy: "grantlattice-ambiguous-copy-v1",
+      ambiguousUnrelated: "grantlattice-ambiguous-unrelated-v1",
       revised: "grantlattice-revised-v1",
     },
     pendingTransaction: null,
@@ -593,13 +595,14 @@ async function canonicalLifecycleState(file, clients, deployment) {
   const readKnownGrant = (grantId) => knownIds.has(grantId)
     ? readView(clients.readClient, address, "get_grant", [grantId])
     : Promise.resolve(null);
-  const [root, objectiveRejected, valid, expansion, ambiguous, ambiguousCopy, revised] = await Promise.all([
+  const [root, objectiveRejected, valid, expansion, ambiguous, ambiguousCopy, ambiguousUnrelated, revised] = await Promise.all([
     readKnownGrant(file.ids.root),
     readKnownGrant(file.ids.objectiveRejected),
     readKnownGrant(file.ids.valid),
     readKnownGrant(file.ids.expansion),
     readKnownGrant(file.ids.ambiguous),
     readKnownGrant(file.ids.ambiguousCopy),
+    readKnownGrant(file.ids.ambiguousUnrelated),
     readKnownGrant(file.ids.revised),
   ]);
   const reviewed = (grant) => grant
@@ -621,10 +624,11 @@ async function canonicalLifecycleState(file, clients, deployment) {
     ambiguousStatus: field(ambiguous, "status") ?? null,
     ambiguousReviewRetryRejected: file.expectedRejections.some((item) => item.action === "REJECT_AMBIGUOUS_REVIEW_RETRY"),
     ambiguousCopyRejected: file.expectedRejections.some((item) => item.action === "REJECT_AMBIGUOUS_COPY") && ambiguousCopy === null,
+    ambiguousUnrelatedRejected: file.expectedRejections.some((item) => item.action === "REJECT_AMBIGUOUS_UNRELATED_CHANGE") && ambiguousUnrelated === null,
     revisedStatus: field(revised, "status") ?? null,
     accessBefore: before?.result ?? null,
     accessAfter: after?.result ?? null,
-    canonical: { root, objectiveRejected, valid, validReview, expansion, expansionReview, ambiguous, ambiguousReview, ambiguousCopy, revised, revisedReview },
+    canonical: { root, objectiveRejected, valid, validReview, expansion, expansionReview, ambiguous, ambiguousReview, ambiguousCopy, ambiguousUnrelated, revised, revisedReview },
   };
 }
 
@@ -772,8 +776,9 @@ function assertFinalLifecycle(state) {
   if (state.ambiguousStatus !== "AMBIGUOUS" || field(canonical.ambiguousReview, "verdict") !== "AMBIGUOUS") {
     throw new Error("Ambiguous child did not remain terminal and non-authorizing.");
   }
-  if (!state.ambiguousReviewRetryRejected || !state.ambiguousCopyRejected || canonical.ambiguousCopy !== null) {
-    throw new Error("Ambiguous authority definition was not locked across retries and child IDs.");
+  if (!state.ambiguousReviewRetryRejected || !state.ambiguousCopyRejected || !state.ambiguousUnrelatedRejected
+    || canonical.ambiguousCopy !== null || canonical.ambiguousUnrelated !== null) {
+    throw new Error("Ambiguous clauses were not locked across retries, child IDs, and unrelated field changes.");
   }
   if (state.revisedStatus !== "ACTIVE" || field(canonical.revisedReview, "verdict") !== "ATTENUATED") {
     throw new Error("Materially revised authority did not receive an independent review.");
@@ -879,6 +884,11 @@ async function lifecycle() {
       state = await executeExpectedRejection({
         file, clients, deployment, action, functionName: "propose_child_grant", absentGrantId: file.ids.ambiguousCopy,
         args: [file.ids.root, file.ids.ambiguousCopy, clients.principalAccount.address, "READ", "case-1", ambiguousClauses, file.childExpiresAt, "demo-propose-ambiguous-copy-v1"], before: state,
+      });
+    } else if (action === "REJECT_AMBIGUOUS_UNRELATED_CHANGE") {
+      state = await executeExpectedRejection({
+        file, clients, deployment, action, functionName: "propose_child_grant", absentGrantId: file.ids.ambiguousUnrelated,
+        args: [file.ids.root, file.ids.ambiguousUnrelated, clients.principalAccount.address, "READ", "case-1", ambiguousClauses, file.childExpiresAt - 60, "demo-propose-ambiguous-unrelated-v1"], before: state,
       });
     } else if (action === "PROPOSE_REVISED") {
       state = await executeLifecycleWrite({

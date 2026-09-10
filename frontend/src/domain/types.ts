@@ -21,6 +21,13 @@ export type TransactionStage =
   | "FAILED"
   | "RETRYABLE";
 
+export type TransactionProgressStage = "AWAITING_SIGNATURE" | TransactionStage;
+
+export interface TransactionProgress {
+  stage: TransactionProgressStage;
+  hash?: string;
+}
+
 export type ClauseKind = "RESTRICTION" | "PROHIBITION";
 
 export interface GrantClause {

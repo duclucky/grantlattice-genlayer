@@ -52,9 +52,9 @@ when its limits are written in natural language.**
   is not a persisted grant status. Protective revocation and derived expiry make
   a grant ineffective.
 - Direct consequence: only a finalized, invariant-valid attenuated verdict
-  activates child authority; expansion denies it, semantic ambiguity is a
-  terminal fingerprint lock, and only technical/unverifiable output remains
-  retryable.
+  activates child authority; expansion denies it, semantic ambiguity locks each
+  unchanged parent/child clause pair, and only technical/unverifiable output
+  remains retryable without a clause revision.
 - Reuse surface: `get_grant`, `get_review`, `is_effective`, and `can_invoke` for
   A2A AgentSkill gateways, MCP tools/call proxies, and Google ADK AgentTool guards.
 
@@ -219,7 +219,7 @@ a later reload stays disconnected until the user deliberately reconnects.
 | Frontend transaction reviewing | Validators are deciding | Keep this page open or revisit Activity; no success is implied |
 | `ATTENUATED` | Safely narrowed | The finalized child becomes active after canonical reload |
 | `EXPANSION` / `DENIED` | Broader than parent | The child remains inactive; create a genuinely narrower proposal |
-| `AMBIGUOUS` / `AMBIGUOUS` | Ambiguous definition | No authority was issued; the fingerprint is locked and a materially revised proposal is required |
+| `AMBIGUOUS` / `AMBIGUOUS` | Ambiguous definition | No authority was issued; each ambiguous clause pair is locked and the named ambiguous clause text must be revised |
 | `UNVERIFIABLE` / `RETRYABLE` | Technical retry available | No authority was issued; the recorded grantor may retry the technical review |
 | `ACTOR_MISMATCH` | Actor does not hold this grant | Do not execute; authenticate the recorded grantee or use a different grant |
 | `REVOKED` | Revoked | This grant and affected descendants cannot authorize use |
@@ -228,6 +228,7 @@ a later reload stays disconnected until the user deliberately reconnects.
 | `RESOURCE_MISSING` | Resource not granted | Do not access this resource |
 | `ANCESTOR_INACTIVE` | Delegation chain is inactive | Do not execute; inspect the lineage for revoke/expiry |
 | Canonical read unavailable | Authority could not be verified | Fail closed and retry the read; never treat it as allowed |
+| `AWAITING_SIGNATURE` | Confirm in wallet | No transaction exists yet; approve or reject the wallet request |
 | `SUBMITTED` | Submitted to the network | Wait for accepted/decided and finalized status |
 | `ACCEPTED` | Accepted for validator decision | The transaction is not yet presented as finalized |
 | `FINALIZED` | Finalized on Studionet | Reload canonical grant state |
@@ -251,8 +252,12 @@ audited again against the real client before network claims.
 - Make the connected address a button that opens an account menu with a clear
   disconnect action. Disconnect removes listeners, clears provider/account UI
   state, and disables every write until a new deliberate connection.
-- Show submitted, accepted/decided, finalized, failed, and retryable states from
-  real receipts only, then reload canonical contract state after finality.
+- Show awaiting-signature before a hash exists, then submitted,
+  accepted/decided, finalized, failed, and retryable states from real request
+  and receipt evidence only. Reload canonical contract state after finality.
+- Display the active contract address, Studionet chain ID, called method, `0 GEN`
+  value, transaction hash, and Explorer links so the contract interaction is
+  directly observable.
 
 ### Visual preservation constraints
 
@@ -301,7 +306,7 @@ index required by the canonical frontend list:
 ```text
 TreeMap[str, Grant] grants
 TreeMap[str, Review] reviews
-TreeMap[str, bool] ambiguous_definitions
+TreeMap[str, bool] ambiguous_clause_pairs
 TreeMap[str, bool] used_nonces
 DynArray[str] grant_ids
 ```
@@ -322,8 +327,11 @@ and `version=1`. A child copies the parent's `max_depth`, stores
 `Review` fields are `child_id`, monotonic `attempt`, `verdict`, canonical
 `expansion_clause_ids_csv`, canonical `ambiguous_clause_ids_csv`, a
 contract-derived `reason_code`, and `definition_fingerprint`.
-`ambiguous_definitions[fingerprint]` records terminal semantic ambiguity across
-child IDs. `reviews[child_id]` is the latest canonical
+`ambiguous_clause_pairs[key]` records terminal semantic ambiguity for a
+domain-separated root-principal/parent-clause/child-clause tuple. The key excludes
+child ID, grantee, objective scope, expiry, depth, nonce, clause order, and
+formatting-only whitespace. The full `Review.definition_fingerprint` remains an
+audit snapshot and is not the retry-authorization key. `reviews[child_id]` is the latest canonical
 review, not a claim of full onchain attempt history. The wallet-scoped Activity
 projection combines current-session progress with allowlisted public Studionet
 transaction history; it remains distinct from canonical latest-review state.
@@ -450,7 +458,8 @@ an OKX-signed root write finalized and reloaded canonical authority in productio
 - Size/count bounds: IDs, labels, CSV, clauses, clause count/text, depth, and nonce
   bounds are locked in the State model section.
 - Missing/contradictory evidence: missing or inconsistent state rejects; semantic
-  ambiguity remains inactive and terminal `AMBIGUOUS` for its canonical fingerprint.
+  ambiguity remains inactive and terminal `AMBIGUOUS` for every unchanged
+  ambiguous parent/child clause pair.
 - Unavailable source: validator/RPC unavailability never activates or allows;
   transaction fails unchanged or the UI reports unavailable.
 - Invalid/unverifiable attestation: `N/A` external attestation; malformed or
@@ -482,7 +491,7 @@ an OKX-signed root write finalized and reloaded canonical authority in productio
 - Missing, malformed, unavailable, or invariant-invalid review output can only
   revert unchanged or create a non-authorizing technical `RETRYABLE` record.
   A normalized semantic ambiguity creates a non-authorizing terminal `AMBIGUOUS`
-  record and locks the definition fingerprint. Neither path can activate a child
+  record and locks each ambiguous semantic clause pair. Neither path can activate a child
   or grant access.
 
 ### Evidence Authority Matrix
@@ -490,8 +499,8 @@ an OKX-signed root write finalized and reloaded canonical authority in productio
 | Consequential claim/fact | Evidence/artifact | Data controller | Authoritative source/issuer | Deterministic verification | Canonical objective/entity/actor binding | Freshness/anti-replay | Semantic role after verification | Non-penalizing failure state | Consequence blocked | Required negative test |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | `EA-ROOT`: sender may issue this root policy | Typed root calldata and transaction sender | Root caller | Authenticated GenVM sender, who becomes the policy principal/grantor | Bounds/canonicalization, absent ID, future expiry, non-payable metadata | Root ID, sender as principal/grantor, grantee, scopes, clause IDs/kinds/text, expiry, max depth | Unique ID plus `sender|create_root_grant|nonce`; live transaction time | None; issuance is deterministic after verification | Revert unchanged | Root `ACTIVE` issuance | Wrong binding, malformed input, replay, expiry -1/equal/+1; grants/nonces unchanged |
-| `EA-CHILD`: parent holder may propose this direct child | Stored parent plus typed child calldata and sender | Parent grantee controls proposal; parent/root authors control inherited bounds | Authenticated sender must equal exact effective parent grantee; stored parent is canonical | Parent/ancestor status/time, parent version, depth, subset scopes, exact clause-ID/kind coverage, child expiry, absent ambiguity fingerprint | Root, parent/child IDs, parent version, grantor/grantee, objective scopes, clauses, depth, expiry | Unique child ID plus `sender|propose_child_grant|nonce`; content fingerprint excludes both ID and nonce; live full-chain time | None at proposal; child remains `PROPOSED` | Revert unchanged; child absent | Child creation and every access allow | Valid-looking child with wrong parent/actor/objective/clause/time/replay or locked cross-ID definition; no child/index/nonce mutation |
-| `EA-REVIEW`: qualitative child policy is no broader | Exact contract-held parent/child clause pair | Root/parent authors control policy text; neither controls validator consensus | Canonical storage is authoritative for what policy was authored; validators independently judge meaning | Exact child/attempt/parent-version binding; total unique expected clause IDs; fixed kinds/classes; bounded normalized output; contract-derived fingerprint | Root, parent/child IDs, parent version, recorded grantor/grantee, attempt, every clause ID and text | Current chain effective/unexpired; monotonic technical retry; terminal semantic fingerprint rejects same-child and cross-ID replay | Classify each exact child clause as narrower/equal, expansion, or ambiguous | Technical `RETRYABLE`, terminal `AMBIGUOUS`, or transaction revert unchanged | Child activation/access from invalid, unverifiable, or repeated ambiguous output | Invalid schema, prompt injection, same-child ambiguity replay, cross-ID copy, material revision, and state/nonce rollback |
+| `EA-CHILD`: parent holder may propose this direct child | Stored parent plus typed child calldata and sender | Parent grantee controls proposal; parent/root authors control inherited bounds | Authenticated sender must equal exact effective parent grantee; stored parent is canonical | Parent/ancestor status/time, parent version, depth, subset scopes, exact clause-ID/kind coverage, child expiry, and no unchanged ambiguous clause-pair lock | Root, parent/child IDs, parent version, grantor/grantee, objective scopes, clauses, depth, expiry | Unique child ID plus `sender|propose_child_grant|nonce`; semantic lock excludes unrelated structured fields and uses canonical clause pairs; live full-chain time | None at proposal; child remains `PROPOSED` | Revert unchanged; child absent | Child creation and every access allow | Valid-looking child with wrong parent/actor/objective/clause/time/replay; same ambiguous clause with new child ID/expiry/grantee/scope/order/whitespace; no child/index/nonce mutation |
+| `EA-REVIEW`: qualitative child policy is no broader | Exact contract-held parent/child clause pair | Root/parent authors control policy text; neither controls validator consensus | Canonical storage is authoritative for what policy was authored; validators independently judge meaning | Exact child/attempt/parent-version binding; total unique expected clause IDs; fixed kinds/classes; bounded normalized output; separate audit fingerprint and semantic clause-pair key | Root, parent/child IDs, parent version, recorded grantor/grantee, attempt, every clause ID and text | Current chain effective/unexpired; monotonic technical retry; unchanged ambiguous clause pairs reject same-child, cross-ID, and unrelated-field replay | Classify each exact child clause as narrower/equal, expansion, or ambiguous | Technical `RETRYABLE`, terminal `AMBIGUOUS`, or transaction revert unchanged | Child activation/access from invalid, unverifiable, or repeated ambiguous output | Invalid schema, prompt injection, same-child replay, cross-ID/expiry/grantee/scope/order/whitespace bypass, ambiguous-clause revision, and state/nonce rollback |
 | `EA-REVOKE`: recorded authority owner may withdraw a grant | Stored grant/root relation, sender, nonce | Recorded grantor or immutable root principal | Authenticated sender matched to canonical grant/root actors | Grant exists, not revoked, caller exact, root relationship valid, non-payable metadata | Grant ID, tree root, caller role, current status | `sender|revoke_grant|nonce`; duplicate state/nonce rejects; expiry does not block protection | None; withdrawal is deterministic | Revert unchanged | Revocation and descendant ineffectiveness | Wrong actor/tree, missing/already revoked, replay; target and unrelated tree unchanged |
 
 Actor-controlled prose cannot redefine grantor, grantee, IDs, parent relation,
@@ -584,11 +593,13 @@ validates the output again:
 - child is still in the legal status and its whole chain is still effective and
   strictly unexpired at transaction time;
 - expansion/ambiguity sets are derived from normalized classes;
-- a length-prefixed canonical authority encoding is hashed with Keccak-256; its
-  digest excludes child ID, nonce, and attempt and is checked before proposal mutation;
+- a full length-prefixed authority fingerprint is retained for audit evidence;
+- a separate domain-separated Keccak-256 semantic key binds root principal and
+  canonical parent/child clause ID, kind, and normalized text; it excludes
+  unrelated structured fields and is checked before proposal mutation;
 - `ATTENUATED` occurs only when every class is `NARROWER_OR_EQUAL`;
 - `EXPANSION` occurs when at least one class expands; otherwise any ambiguity
-  yields terminal `AMBIGUOUS`/`AMBIGUOUS` and records the fingerprint lock.
+  yields terminal `AMBIGUOUS`/`AMBIGUOUS` and records every ambiguous clause-pair lock.
 
 Invalid output cannot activate, deny, route, settle, or grant access. It either
 reverts the transaction unchanged or records a fixed non-authorizing
@@ -603,7 +614,7 @@ to identify the current child/attempt.
 | --- | --- | --- | --- | --- |
 | Every expected clause `NARROWER_OR_EQUAL` | `ATTENUATED` | `ACTIVE` | May become effective only if every ancestor/time/scope check also passes | Use exact canonical access check; grantor/root may revoke |
 | One or more `EXPANDS_AUTHORITY` | `EXPANSION` | `DENIED` | Always ineffective; never allowed | Create a new, genuinely narrower child ID |
-| No expansion and one or more `AMBIGUOUS` | `AMBIGUOUS` | `AMBIGUOUS` | Inactive; never allowed; fingerprint blocks same-child and cross-ID retries | Materially revise the policy or scope and create a new proposal |
+| No expansion and one or more `AMBIGUOUS` | `AMBIGUOUS` | `AMBIGUOUS` | Inactive; never allowed; unchanged ambiguous clause pairs block same-child, cross-ID, and unrelated-field retries | Revise every named ambiguous clause and create a new proposal |
 | Malformed/invariant-invalid/unavailable/disagreed output | `UNVERIFIABLE` or transaction failure | `RETRYABLE` or prior state unchanged | Inactive; never allowed | Retry only after distinguishing transient from structural failure |
 | Authorized revoke | `N/A — deterministic protection` | `REVOKED` | Target and all descendants fail live ancestor evaluation | No restore in v1; issue a new bounded grant if appropriate |
 | Own/ancestor expiry | `N/A — derived time rule` | Stored status unchanged | Ineffective/denied at read and every time-sensitive write | New grant required; protection may still be revoked |
@@ -772,7 +783,7 @@ the canonical grant interface.
 | --- | --- | --- | --- | --- | --- | --- |
 | Root authority is authenticated and isolated | `create_root_grant`: absent -> `ACTIVE`; sender locked as root/grantor; append ID once | `get_grant`, `list_grant_ids`, `is_effective` | Wrong caller binding, duplicate ID/nonce, index isolation/pagination, time bounds | Root form, wallet gate, list/detail lifecycle/reload tests | `docs/evidence/studionet/lifecycle.json` (`CREATE_ROOT`); `docs/evidence/browser/wallet-lifecycle.md` | Local + Studionet + OKX browser PASS |
 | A child cannot exceed deterministic parent scope | `propose_child_grant`: absent -> `PROPOSED` after subset/depth/time/clause checks | `get_grant`, `is_effective` | Wider cap/resource/time/depth, clause mismatch, wrong actor/state | Delegate form parent gate/validation/finality tests | `docs/evidence/studionet/lifecycle.json` (`PROVE_OBJECTIVE_REJECTION`, `PROPOSE_VALID`) | Local + Studionet PASS; browser wrapper/tests PASS |
-| Only validator-agreed qualitative attenuation activates a child | `review_child_grant`: `PROPOSED/technical RETRYABLE -> ACTIVE/DENIED/AMBIGUOUS/RETRYABLE`; ambiguous fingerprints reject recreation | `get_review`, `get_grant`, `is_effective` | Semantic replay, cross-ID copy, material revision, technical retry, malicious outputs, total coverage/invariants | Terminal ambiguity guidance, technical retry control, stages, canonical reload | `docs/evidence/studionet/lifecycle.json` (review outcomes and fingerprint-lock rejections) | Updated local source/tests PASS; active Studionet revision PASS |
+| Only validator-agreed qualitative attenuation activates a child | `review_child_grant`: `PROPOSED/technical RETRYABLE -> ACTIVE/DENIED/AMBIGUOUS/RETRYABLE`; semantic clause-pair locks reject unchanged ambiguity | `get_review`, `get_grant`, `is_effective` | Same-child/cross-ID replay, unrelated expiry/grantee/scope/order/whitespace changes, ambiguous-clause revision, technical retry, malicious outputs, total coverage/invariants | Named ambiguous clauses, terminal-vs-technical guidance, truthful signature/receipt stages, canonical reload | `docs/evidence/studionet/lifecycle.json` (new unrelated-change rejection stage after redeployment) | Updated local source/tests PASS; new Studionet deployment/evidence pending |
 | Revocation/expiry fail-closes every descendant without partial cascade | `revoke_grant`: target -> `REVOKED`; descendant result derived | `is_effective`, `can_invoke`, `get_grant` | Deep chain, expired revoke, wrong actor, unrelated tree, no double revoke | Eligible revoke control and descendant refresh | `docs/evidence/studionet/lifecycle.json` (`REVOKE_ROOT`) | Local + Studionet PASS; browser wrapper/tests PASS |
 | Exact protected actions bind the authenticated actor and fail closed | No write; actor equality plus live bounded chain/scope evaluation | `can_invoke` exact reason | Actor mismatch, all reason enums, invalid time, boundary equality, missing grant, stale phase | `/checks` connected-actor, mismatch, allowed/denied/unavailable tests | `docs/evidence/studionet/judge-remediation-verification.md` records `ALLOWED`, `ACTOR_MISMATCH`, and post-revoke `ANCESTOR_INACTIVE` | Remediated source/local + Studionet PASS; production browser proof pending |
 | Browser users choose a wallet and see only real lifecycle state; wallet filtering is not confidentiality | Wallet/network session plus adapter writes; no simulated state | Fresh public contract reads after `FINALIZED` | Provider/network/receipt parser tests | Picker, account menu, disconnect, public-state disclaimer, Activity, reload tests | `docs/evidence/frontend/judge-remediation-production.md`; prior wallet lifecycle evidence remains revision-specific | Remediated production bundle/proxy PASS; interactive browser verification pending due tooling blocker |

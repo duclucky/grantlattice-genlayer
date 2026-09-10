@@ -2,7 +2,8 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import { useContractAdapter } from "../adapters/ContractAdapterProvider";
-import type { TransactionStage } from "../domain/types";
+import { TransactionStatusPanel } from "../components/TransactionStatusPanel";
+import type { TransactionProgress } from "../domain/types";
 import {
   assertAsciiClauseText,
   createNonce,
@@ -20,10 +21,10 @@ export function NewGrantPage() {
   const wallet = useWallet();
   const transactions = useTransactions();
   const navigate = useNavigate();
-  const [stage, setStage] = useState<TransactionStage | "IDLE">("IDLE");
+  const [progress, setProgress] = useState<TransactionProgress | null>(null);
   const [error, setError] = useState<string | null>(null);
   const connected = Boolean(wallet.account) && wallet.networkState === "ready";
-  const busy = stage === "SUBMITTED" || stage === "ACCEPTED";
+  const busy = progress?.stage === "AWAITING_SIGNATURE" || progress?.stage === "SUBMITTED" || progress?.stage === "ACCEPTED";
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -31,7 +32,6 @@ export function NewGrantPage() {
     const data = new FormData(event.currentTarget);
     try {
       const grantId = parseGrantId(data.get("grantId"));
-      setStage("SUBMITTED");
       const result = await transactions.run("Create root grant", grantId, () => adapter.createRoot({
         grantId,
         grantee: parseAddress(data.get("grantee")),
@@ -44,12 +44,11 @@ export function NewGrantPage() {
           { id: "purpose", kind: "RESTRICTION", text: assertAsciiClauseText(data.get("purpose")) },
         ],
         nonce: createNonce("create-root"),
-      }));
-      setStage(result);
+      }), setProgress);
       if (result === "FINALIZED") navigate(`/grants/${grantId}`);
       else setError(`Transaction stopped at ${result}. Canonical authority was not assumed.`);
     } catch (caught) {
-      setStage("FAILED");
+      setProgress((current) => ({ stage: "FAILED", hash: current?.hash }));
       setError(errorMessage(caught));
     }
   }
@@ -93,12 +92,12 @@ export function NewGrantPage() {
         </fieldset>
         <div className="form-actions">
           <button className="button button-primary" type="submit" disabled={!connected || busy}>
-            {!connected ? "Connect wallet to create" : busy ? stage : "Create root grant"}
+            {!connected ? "Connect wallet to create" : busy ? "Transaction in progress" : "Create root grant"}
           </button>
           <Link className="button button-quiet" to="/grants">Cancel</Link>
         </div>
         {error ? <p className="wallet-error" role="alert">{error}</p> : null}
-        <p className="form-note">This non-payable action sends 0 GEN.</p>
+        <TransactionStatusPanel method="create_root_grant" progress={progress} />
       </form>
     </div>
   );

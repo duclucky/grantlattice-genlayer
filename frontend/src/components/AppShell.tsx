@@ -11,6 +11,7 @@ import { useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 
 import { WalletControls } from "../wallet/WalletControls";
+import { ContractIdentity } from "./ContractIdentity";
 
 const navItems = [
   { to: "/grants", label: "Grants", icon: CirclesThreeIcon },
@@ -74,8 +75,11 @@ export function AppShell() {
         <Outlet />
       </main>
       <footer className="site-footer">
-        <p>GrantLattice verifies narrower delegation before authority becomes active.</p>
-        <NavLink to="/help">Safety and limits</NavLink>
+        <div>
+          <p>GrantLattice verifies narrower delegation before authority becomes active.</p>
+          <NavLink to="/help">Safety and limits</NavLink>
+        </div>
+        <ContractIdentity />
       </footer>
     </div>
   );

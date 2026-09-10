@@ -17,6 +17,9 @@ export function RuntimeTransactionProvider({ children, config, loadHistory }: Pr
   const scope = useMemo<ActivityScope | null>(() => selected && wallet.account && wallet.networkState === 'ready'
     ? { account: wallet.account as Address, contractAddress: selected.contractAddress, network: selected.network }
     : null, [selected, wallet.account, wallet.networkState]);
+  const contract = useMemo(() => selected
+    ? { contractAddress: selected.contractAddress, network: selected.network }
+    : null, [selected]);
   const inactiveReason = !selected ? 'configuration' : wallet.account && wallet.networkState !== 'ready' ? 'network' : 'wallet';
-  return <TransactionProvider scope={scope} inactiveReason={inactiveReason} loadHistory={loadHistory}>{children}</TransactionProvider>;
+  return <TransactionProvider contract={contract} scope={scope} inactiveReason={inactiveReason} loadHistory={loadHistory}>{children}</TransactionProvider>;
 }

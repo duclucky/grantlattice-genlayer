@@ -126,7 +126,8 @@ describe("GrantDetailPage", () => {
     await connectWallet();
 
     expect(await screen.findByText("Semantic ambiguity is locked")).toBeInTheDocument();
-    expect(screen.getByText(/materially revise the policy or scope/iu)).toBeInTheDocument();
+    expect(screen.getByText(/changing expiry, grantee, or objective scope will not unlock it/iu)).toBeInTheDocument();
+    expect(screen.getByText(/revise ambiguous clause: purpose/iu)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Request semantic review" })).not.toBeInTheDocument();
     expect(reviewChild).not.toHaveBeenCalled();
   });

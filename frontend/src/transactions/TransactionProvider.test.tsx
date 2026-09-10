@@ -38,7 +38,50 @@ function TransactionProbe({ request }: { request: WriteRequest }) {
   );
 }
 
+function SignatureProbe({ createRequest }: { createRequest: () => Promise<WriteRequest> }) {
+  const { run } = useTransactions();
+  const [progress, setProgress] = useState("IDLE");
+
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={() => {
+          void run(
+            "Create root grant",
+            "root-1",
+            createRequest,
+            (next) => setProgress(`${next.stage}:${next.hash ?? "no-hash"}`),
+          );
+        }}
+      >
+        Sign
+      </button>
+      <output>{progress}</output>
+    </div>
+  );
+}
+
 describe("TransactionProvider", () => {
+  it("reports awaiting signature before a request hash can be called submitted", async () => {
+    const user = userEvent.setup();
+    const signature = deferred<WriteRequest>();
+    const finality = deferred<TransactionStage>();
+    render(
+      <TransactionProvider scope={scope} loadHistory={emptyHistory}>
+        <SignatureProbe createRequest={() => signature.promise} />
+      </TransactionProvider>,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Sign" }));
+    expect(screen.getByText("AWAITING_SIGNATURE:no-hash")).toBeInTheDocument();
+    expect(screen.queryByText(/SUBMITTED/)).not.toBeInTheDocument();
+
+    signature.resolve({ hash: "0xsigned-hash", wait: () => finality.promise });
+    expect(await screen.findByText("SUBMITTED:0xsigned-hash")).toBeInTheDocument();
+    finality.resolve("FINALIZED");
+  });
+
   it("shows submitted before the real wait result becomes finalized", async () => {
     const user = userEvent.setup();
     const finality = deferred<TransactionStage>();

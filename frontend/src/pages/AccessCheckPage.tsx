@@ -1,5 +1,6 @@
 import { ShieldCheckIcon } from "@phosphor-icons/react";
 import { type FormEvent, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 
 import { useContractAdapter } from "../adapters/ContractAdapterProvider";
 import type { AccessDecision, Address } from "../domain/types";
@@ -7,6 +8,7 @@ import { useWallet } from "../wallet/WalletProvider";
 
 export function AccessCheckPage() {
   const adapter = useContractAdapter();
+  const [searchParams] = useSearchParams();
   const wallet = useWallet();
   const actor = wallet.account as Address | null;
   const [decision, setDecision] = useState<AccessDecision | null>(null);
@@ -38,10 +40,10 @@ export function AccessCheckPage() {
         <h1>Check an action before it runs</h1>
         <p>Ask canonical state about one exact grant, capability, and resource.</p>
       </header>
-      <form className="product-form access-form" onSubmit={handleSubmit}>
-        <label>Grant ID<input name="grantId" required /></label>
-        <label>Capability ID<input name="capabilityId" required /></label>
-        <label>Resource ID<input name="resourceId" required /></label>
+      <form className="product-form access-form" id="access-check-form" onSubmit={handleSubmit}>
+        <label>Grant ID<input name="grantId" required defaultValue={searchParams.get("grant") ?? ""} /></label>
+        <label>Capability ID<input name="capabilityId" required defaultValue={searchParams.get("capability") ?? ""} /></label>
+        <label>Resource ID<input name="resourceId" required defaultValue={searchParams.get("resource") ?? ""} /></label>
         <p className="form-note">
           {actor
             ? <>Actor from connected wallet: <code>{actor}</code></>
@@ -69,6 +71,11 @@ export function AccessCheckPage() {
             ? decision.reason
             : "A missing or unavailable canonical read will never be displayed as allowed."}
         </p>
+        {readFailed ? (
+          <button className="button button-secondary" form="access-check-form" type="submit">
+            Retry canonical read
+          </button>
+        ) : null}
       </section>
     </div>
   );

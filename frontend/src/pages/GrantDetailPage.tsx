@@ -5,7 +5,8 @@ import { Link, useParams } from "react-router-dom";
 import { useContractAdapter } from "../adapters/ContractAdapterProvider";
 import { PageState } from "../components/PageState";
 import { StatusBadge } from "../components/StatusBadge";
-import type { Address, GrantRecord, ReviewRecord } from "../domain/types";
+import { TransactionStatusPanel } from "../components/TransactionStatusPanel";
+import type { Address, GrantRecord, ReviewRecord, TransactionProgress } from "../domain/types";
 import { createNonce, errorMessage } from "../domain/input";
 import { useTransactions } from "../transactions/TransactionProvider";
 import { useWallet } from "../wallet/WalletProvider";
@@ -21,6 +22,8 @@ export function GrantDetailPage() {
   const [state, setState] = useState<"loading" | "ready" | "error">("loading");
   const [writeError, setWriteError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [writeMethod, setWriteMethod] = useState<string | null>(null);
+  const [writeProgress, setWriteProgress] = useState<TransactionProgress | null>(null);
 
   const reload = useCallback(() => {
     let live = true;
@@ -54,12 +57,15 @@ export function GrantDetailPage() {
 
   async function runWrite(
     label: string,
+    method: string,
     createRequest: () => ReturnType<typeof adapter.reviewChild>,
   ) {
     setBusy(true);
+    setWriteMethod(method);
+    setWriteProgress(null);
     setWriteError(null);
     try {
-      const result = await transactions.run(label, grantId, createRequest);
+      const result = await transactions.run(label, grantId, createRequest, setWriteProgress);
       if (result === "FINALIZED") reload();
       else setWriteError(`Transaction stopped at ${result}. Canonical authority was not assumed.`);
     } catch (caught) {
@@ -111,7 +117,7 @@ export function GrantDetailPage() {
   const authorityDescription = grant.effective
     ? "Consumers may still check an exact capability and resource before execution."
     : grant.status === "AMBIGUOUS"
-      ? "This canonical definition cannot authorize or be reviewed again. Materially revise the policy or scope and create a new proposal."
+      ? "This clause pair cannot authorize or be reviewed again. Changing expiry, grantee, or objective scope will not unlock it."
       : grant.status === "RETRYABLE"
         ? "The previous review was technically unverifiable. Authority remains inactive, but the recorded grantor may request another review."
         : "This grant cannot authorize an action until its state and entire ancestor chain are effective.";
@@ -171,7 +177,19 @@ export function GrantDetailPage() {
         </ul>
       </section>
 
-      {review ? <section className="content-card"><h2>Latest review</h2><p>{review.reason}</p></section> : null}
+      {review ? (
+        <section className="content-card">
+          <h2>Latest review</h2>
+          <dl className="definition-list">
+            <div><dt>Verdict</dt><dd>{review.verdict}</dd></div>
+            <div><dt>Attempt</dt><dd>{review.attempt}</dd></div>
+            <div><dt>Reason</dt><dd>{review.reason}</dd></div>
+          </dl>
+          {review.ambiguousClauseIds.length > 0 ? (
+            <p><strong>Revise ambiguous clause: {review.ambiguousClauseIds.join(", ")}</strong></p>
+          ) : null}
+        </section>
+      ) : null}
 
       <section className="action-bar" aria-label="Grant actions">
         {canDelegate ? <Link className="button button-primary" to={`/grants/${grant.grantId}/delegate`}>Delegate a narrower grant</Link> : null}
@@ -179,7 +197,7 @@ export function GrantDetailPage() {
           <button
             className="button button-primary"
             disabled={busy}
-            onClick={() => void runWrite("Review child grant", () => adapter.reviewChild(grant.grantId))}
+            onClick={() => void runWrite("Review child grant", "review_child_grant", () => adapter.reviewChild(grant.grantId))}
             type="button"
           >
             Request semantic review
@@ -192,6 +210,7 @@ export function GrantDetailPage() {
             disabled={busy}
             onClick={() => void runWrite(
               "Revoke grant",
+              "revoke_grant",
               () => adapter.revokeGrant(grant.grantId, createNonce("revoke")),
             )}
             type="button"
@@ -203,6 +222,7 @@ export function GrantDetailPage() {
           <button className="button button-danger" type="button" disabled>Connect wallet for authorized actions</button>
         ) : null}
       </section>
+      {writeMethod ? <TransactionStatusPanel method={writeMethod} progress={writeProgress} /> : null}
       {writeError ? <p className="wallet-error" role="alert">{writeError}</p> : null}
     </div>
   );
