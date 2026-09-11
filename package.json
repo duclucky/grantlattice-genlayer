@@ -26,5 +26,8 @@
   },
   "dependencies": {
     "genlayer-js": "1.1.8"
+  },
+  "overrides": {
+    "js-yaml": "4.3.2"
   }
 }
