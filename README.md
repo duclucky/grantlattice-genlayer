@@ -9,7 +9,7 @@ GrantLattice uses GenLayer validator consensus to ensure natural-language agent 
 ## Deployed Contract
 
 - Network: GenLayer Studionet
-- Contract: [`0xB80E78f0CdDe708d9dcDfD4A2c74050E38289f95`](https://explorer-studio.genlayer.com/address/0xB80E78f0CdDe708d9dcDfD4A2c74050E38289f95)
+- Contract: [`0x20Cc89F505849Fde12F5703a570B07852235F396`](https://explorer-studio.genlayer.com/address/0x20Cc89F505849Fde12F5703a570B07852235F396)
 - Contract writes: nonpayable (`0 GEN`)
 
 ## The Problem
@@ -118,7 +118,7 @@ Copy-Item frontend/.env.example frontend/.env.local
 Set the public deployed address in `frontend/.env.local`:
 
 ```dotenv
-VITE_GENLAYER_CONTRACT_ADDRESS=0xB80E78f0CdDe708d9dcDfD4A2c74050E38289f95
+VITE_GENLAYER_CONTRACT_ADDRESS=0x20Cc89F505849Fde12F5703a570B07852235F396
 VITE_GENLAYER_IC_RPC_PATH=/api/genlayer
 VITE_GENLAYER_NETWORK=studionet
 ```

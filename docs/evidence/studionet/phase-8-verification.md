@@ -1,75 +1,63 @@
-# Phase 8 Studionet deployment and lifecycle verification
+# Semantic ambiguity lock Studionet verification
 
-Status: **PASS**
+Status: **PASS ON STUDIONET**
 
-Date: 2026-09-06
+Date: 2026-09-11
 
-Network: **GenLayer Studionet only** (chain ID `61999`). The active revision is
-`0xB80E78f0CdDe708d9dcDfD4A2c74050E38289f95`; earlier revisions are retained
-under `docs/evidence/studionet/archive/` and are not used as current proof.
+## Deployment identity
 
-## Deployment
+```text
+network: studionet
+chainId: 61999
+sourceCommit: ff389885019da7a6e3ec3184e90785f918824401
+sourceSha256: 98cf8a88b0e7c34cac4415cae70536669e996005da765ca8725eb2c367817d2b
+contract: 0x20Cc89F505849Fde12F5703a570B07852235F396
+deploy transaction: 0xdd3a2f9daed4f5339aa11f0112e11d9e20137f3e1855c61e141d1975ad79e208
+receipt: FINALIZED / SUCCESS / MAJORITY_AGREE
+initial grant count: 0
+contract balance after lifecycle: 0 GEN
+```
 
-Command:
+Explorer:
+`https://explorer-studio.genlayer.com/address/0x20Cc89F505849Fde12F5703a570B07852235F396`
+
+## Commands and observed output
 
 ```powershell
 npm run studionet:deploy
-```
+# Result: SUCCESS
+# contractAddress: 0x20Cc89F505849Fde12F5703a570B07852235F396
 
-Observed result:
-
-```text
-Result: SUCCESS
-Contract: 0xB80E78f0CdDe708d9dcDfD4A2c74050E38289f95
-Receipt: FINALIZED / SUCCESS / MAJORITY_AGREE
-Deployed code present: true
-Initial grant IDs: []
-```
-
-All four contract writes are non-payable and sent `0 GEN`; the deployed
-contract balance is `0 GEN`.
-
-## Semantic ambiguity lifecycle
-
-Command:
-
-```powershell
 npm run studionet:lifecycle
+# Result: SUCCESS
+# transactions: 10
+# expectedRejections: 4
+# accessAfter: ANCESTOR_INACTIVE
 ```
 
-Observed terminal result:
+The sanitized canonical lifecycle proves:
 
-```text
-Result: SUCCESS
-Root ID: grantlattice-root-v1
-Successful contract writes: 10
-Expected unchanged rejection: 3
-Access after root revoke: ANCESTOR_INACTIVE
-```
+- deterministic objective widening was rejected without creating a grant;
+- semantic attenuation activated a valid child;
+- semantic expansion denied an expanding child;
+- semantic ambiguity stayed non-authorizing;
+- review of the same ambiguous child was rejected;
+- recreating the same ambiguous clauses under another child ID was rejected;
+- recreating the same ambiguous clauses with only expiry changed was rejected;
+- a materially revised ambiguous clause received a new review and activated;
+- the exact recorded actor received `ALLOWED`, another actor received
+  `ACTOR_MISMATCH`, and ancestor revocation returned `ANCESTOR_INACTIVE`;
+- every contract write used `0 GEN` and the contract balance remained `0 GEN`.
 
-The lifecycle records these canonical checks in
-[`lifecycle.json`](lifecycle.json):
+The prior active revision at
+`0xB80E78f0CdDe708d9dcDfD4A2c74050E38289f95` had a verified `0 GEN` contract
+balance and is preserved under `archive/0xB80E78f0CdDe708d9dcDfD4A2c74050E38289f95/`
+as inactive, superseded evidence.
 
-| Check | Canonical result | Safety consequence |
-| --- | --- | --- |
-| Valid attenuation | child `ACTIVE`; review `ATTENUATED` | exact `READ` / `case-1` access is `ALLOWED` before revoke |
-| Semantic expansion | child `DENIED`; review `EXPANSION` | child never authorizes |
-| Semantic ambiguity | child `AMBIGUOUS`; review `AMBIGUOUS` | terminal, inactive, fingerprint recorded |
-| Same definition, same clauses, new `child_id` | finalized execution error; copy absent | fingerprint lock cannot be bypassed by ID/nonce changes |
-| Material policy revision | child `ACTIVE`; review `ATTENUATED` | changed definition receives a new fingerprint and may be reviewed |
-| Root revocation | root `REVOKED` | previously active descendant reads `ANCESTOR_INACTIVE` |
-| Wrong actor | `ACTOR_MISMATCH` | public grant ID is not caller authorization |
+Only allowlisted public receipt fields and canonical state are stored. No private
+keys, raw receipts, traces, validator configuration, stdout, or stderr are included.
 
-The ambiguity fingerprint is
-`9a56b66eadf4ef56a4905c1c391af53244ba18e7247e90256b86048bfc0b8322`.
-It is derived from parent ID/version, grantee, capabilities, resources,
-expiry/depth constraints, and canonical clauses; child ID, caller nonce, and
-review attempt are deliberately excluded. The direct suite separately proves
-that `UNVERIFIABLE` technical failures remain the only retryable review path.
+## Honest boundary
 
-## Safe evidence boundary
-
-The JSON evidence stores sanitized finalized receipt fields, transaction hashes,
-allowlisted actors, GEN amounts, IDs, and canonical view projections. It does
-not store private keys, validator configuration, raw payloads, or complete RPC
-responses.
+This is script-signed Studionet evidence. Production Vercel deployment and
+browser-wallet interaction are verified separately.

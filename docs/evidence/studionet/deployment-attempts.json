@@ -83,6 +83,32 @@
       "result": "SUCCESS",
       "finalizedAt": "2026-09-06T16:15:28.980Z",
       "contractAddress": "0xB80E78f0CdDe708d9dcDfD4A2c74050E38289f95"
+    },
+    {
+      "transactionHash": "0xdd3a2f9daed4f5339aa11f0112e11d9e20137f3e1855c61e141d1975ad79e208",
+      "network": "studionet",
+      "chainId": 61999,
+      "rpc": "https://studio.genlayer.com/api",
+      "repositoryCommit": "ff389885019da7a6e3ec3184e90785f918824401",
+      "sourceCommit": "ff389885019da7a6e3ec3184e90785f918824401",
+      "sourceSha256": "98cf8a88b0e7c34cac4415cae70536669e996005da765ca8725eb2c367817d2b",
+      "depends": "py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6",
+      "deployer": "0xC495ef51618D03267A1f227aFe5b27B38c748272",
+      "delegate": "0x3216E246181F597a91238b3D493Ddf47924A226f",
+      "status": "FINALIZED",
+      "submittedAt": "2026-09-10T23:52:03.734Z",
+      "acceptedAt": "2026-09-10T23:52:08.291Z",
+      "receipt": {
+        "label": "deploy",
+        "transactionHash": "0xdd3a2f9daed4f5339aa11f0112e11d9e20137f3e1855c61e141d1975ad79e208",
+        "status": "FINALIZED",
+        "txExecutionResult": "SUCCESS",
+        "consensusResult": "MAJORITY_AGREE",
+        "contractAddress": "0x20Cc89F505849Fde12F5703a570B07852235F396"
+      },
+      "result": "SUCCESS",
+      "finalizedAt": "2026-09-10T23:52:40.614Z",
+      "contractAddress": "0x20Cc89F505849Fde12F5703a570B07852235F396"
     }
   ]
 }
