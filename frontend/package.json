@@ -34,5 +34,8 @@
     "vite": "8.2.2",
     "vitest": "4.1.11",
     "vitest-axe": "0.1.0"
+  },
+  "optionalDependencies": {
+    "@rolldown/binding-wasm32-wasi": "1.2.5"
   }
 }
