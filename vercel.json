@@ -1,0 +1,3 @@
+{
+  "installCommand": "npm install --include=optional && npm --prefix frontend install --workspaces=false --include=optional"
+}
