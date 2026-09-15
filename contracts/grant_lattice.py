@@ -512,7 +512,7 @@ class GrantLattice(gl.Contract):
         for child_clause in child_clauses:
             parent_clause = parent_by_id[child_clause["id"]]
             key = self._ambiguous_clause_pair_key(
-                parent.root_principal,
+                parent,
                 parent_clause,
                 child_clause,
             )
@@ -529,7 +529,7 @@ class GrantLattice(gl.Contract):
         child_by_id = self._clauses_by_id(self._parse_clauses(child.clauses_json))
         for clause_id in ambiguous_ids:
             key = self._ambiguous_clause_pair_key(
-                parent.root_principal,
+                parent,
                 parent_by_id[clause_id],
                 child_by_id[clause_id],
             )
@@ -537,13 +537,14 @@ class GrantLattice(gl.Contract):
 
     def _ambiguous_clause_pair_key(
         self,
-        root_principal: Address,
+        parent: Grant,
         parent_clause,
         child_clause,
     ) -> str:
         fields = [
-            "GRANTLATTICE_AMBIGUITY_CLAUSE_PAIR_V1",
-            self._address_key(root_principal),
+            "GRANTLATTICE_AMBIGUITY_CLAUSE_PAIR_V2",
+            parent.grant_id,
+            str(int(parent.version)),
             parent_clause["id"],
             parent_clause["kind"],
             self._normalize_semantic_text(parent_clause["text"]),
@@ -557,10 +558,17 @@ class GrantLattice(gl.Contract):
         return Keccak256(encoded.encode("utf-8")).hexdigest()
 
     def _normalize_semantic_text(self, value: str) -> str:
+        # Semantic lock identity ignores case, punctuation, and formatting-only
+        # edits. Only alphanumeric tokens remain; punctuation becomes a space.
+        value = value.lower()
         normalized = ""
         pending_space = False
         for char in value:
-            if char == " ":
+            is_ascii_alnum = (
+                ("a" <= char <= "z")
+                or ("0" <= char <= "9")
+            )
+            if not is_ascii_alnum:
                 if normalized != "":
                     pending_space = True
             else:

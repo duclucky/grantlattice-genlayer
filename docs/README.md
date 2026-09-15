@@ -328,9 +328,12 @@ and `version=1`. A child copies the parent's `max_depth`, stores
 `expansion_clause_ids_csv`, canonical `ambiguous_clause_ids_csv`, a
 contract-derived `reason_code`, and `definition_fingerprint`.
 `ambiguous_clause_pairs[key]` records terminal semantic ambiguity for a
-domain-separated root-principal/parent-clause/child-clause tuple. The key excludes
-child ID, grantee, objective scope, expiry, depth, nonce, clause order, and
-formatting-only whitespace. The full `Review.definition_fingerprint` remains an
+domain-separated parent-grant-ID/version and canonical parent-clause/child-clause
+tuple. Clause identity lowercases ASCII text, converts punctuation to spaces, and
+collapses whitespace, so case-only, punctuation-only, and formatting-only edits do
+not create a new semantic policy. A genuinely changed clause does. The key excludes
+child ID, grantee, objective scope, expiry, depth, nonce, and clause order. The full
+`Review.definition_fingerprint` remains an
 audit snapshot and is not the retry-authorization key. `reviews[child_id]` is the latest canonical
 review, not a claim of full onchain attempt history. The wallet-scoped Activity
 projection combines current-session progress with allowlisted public Studionet
@@ -594,9 +597,10 @@ validates the output again:
   strictly unexpired at transaction time;
 - expansion/ambiguity sets are derived from normalized classes;
 - a full length-prefixed authority fingerprint is retained for audit evidence;
-- a separate domain-separated Keccak-256 semantic key binds root principal and
-  canonical parent/child clause ID, kind, and normalized text; it excludes
-  unrelated structured fields and is checked before proposal mutation;
+- a separate domain-separated Keccak-256 semantic key binds parent grant ID/version
+  and canonical parent/child clause ID, kind, and semantic text; it excludes
+  unrelated structured fields and is checked before proposal mutation. Semantic text
+  ignores ASCII case, punctuation, and formatting-only whitespace;
 - `ATTENUATED` occurs only when every class is `NARROWER_OR_EQUAL`;
 - `EXPANSION` occurs when at least one class expands; otherwise any ambiguity
   yields terminal `AMBIGUOUS`/`AMBIGUOUS` and records every ambiguous clause-pair lock.

@@ -6,10 +6,12 @@ GrantLattice uses GenLayer validator consensus to ensure natural-language agent 
 
 [`https://grantlattice-genlayer.vercel.app`](https://grantlattice-genlayer.vercel.app)
 
+Frontend walkthrough: [`docs/frontend-e2e-guide.md`](docs/frontend-e2e-guide.md)
+
 ## Deployed Contract
 
 - Network: GenLayer Studionet
-- Contract: [`0x20Cc89F505849Fde12F5703a570B07852235F396`](https://explorer-studio.genlayer.com/address/0x20Cc89F505849Fde12F5703a570B07852235F396)
+- Contract: [`0xC9A8F8640e80591BE0d0F67d411BbBE3e60213fE`](https://explorer-studio.genlayer.com/address/0xC9A8F8640e80591BE0d0F67d411BbBE3e60213fE)
 - Contract writes: nonpayable (`0 GEN`)
 
 ## The Problem
@@ -28,8 +30,10 @@ agree on one of three bounded meanings:
 - `EXPANDS_AUTHORITY`: at least one clause is broader, so the child is denied.
 - `AMBIGUOUS`: meaning is not safe to settle, so every ambiguous parent/child
   clause pair remains inactive and locked until that clause text is revised.
-  Changing expiry, grantee, objective scope, child ID, clause order, or whitespace
-  does not create another semantic attempt.
+  Changing expiry, grantee, objective scope, child ID, clause order, ASCII case,
+  punctuation, or whitespace does not create another semantic attempt. The lock is
+  scoped to the parent grant ID/version and the canonical semantic clause pair, so
+  identical clauses under unrelated parent grants are not over-locked.
 - `UNVERIFIABLE`: the validator execution or output could not be verified, so
   the inactive child may be retried without treating failure as authority.
 
@@ -118,7 +122,7 @@ Copy-Item frontend/.env.example frontend/.env.local
 Set the public deployed address in `frontend/.env.local`:
 
 ```dotenv
-VITE_GENLAYER_CONTRACT_ADDRESS=0x20Cc89F505849Fde12F5703a570B07852235F396
+VITE_GENLAYER_CONTRACT_ADDRESS=0xC9A8F8640e80591BE0d0F67d411BbBE3e60213fE
 VITE_GENLAYER_IC_RPC_PATH=/api/genlayer
 VITE_GENLAYER_NETWORK=studionet
 ```
