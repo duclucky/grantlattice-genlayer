@@ -1,7 +1,4 @@
 {
-  "evidenceScope": "HISTORICAL_ARCHIVED_REVISION",
-  "active": false,
-  "archiveCopy": "archive/0x20Cc89F505849Fde12F5703a570B07852235F396/lifecycle.json",
   "network": "studionet",
   "chainId": 61999,
   "contractAddress": "0x20Cc89F505849Fde12F5703a570B07852235F396",

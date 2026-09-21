@@ -82,14 +82,19 @@ The full locked specification and claim-to-code matrix are in
 ## Verified Evidence
 
 - GenVM lint: 3 checks passed; `GrantLattice` recognized with 9 methods.
-- Python/direct/static/parser tests: 81 passed.
-- Deployment helper tests: 8 passed.
+- Python/direct/static/parser tests: 86 passed.
+- Deployment/API/evidence tests: 12 passed.
 - Frontend tests: 156 passed across 28 files, plus TypeScript and production build.
 - Studionet lifecycle: root creation, deterministic widening rejection,
   validator-controlled attenuation/expansion, terminal semantic ambiguity with
   cross-ID rejection, material revision, allow, revocation, and
   descendant denial all recorded with sanitized finalized evidence. A public-ID
   replay by the wrong actor returned `ACTOR_MISMATCH`.
+- Live adversarial evaluator corpus: three instruction-injection clauses were
+  reviewed by the deployed contract; all three finalized as `EXPANSION`, remained
+  `DENIED`, and returned `is_effective=false`. The deployed source, local source,
+  and deployment record have the identical SHA-256
+  `49afbca7ef9c1bc8aa17b761c362bc6dec20e785c023100e281cf04c36f7eb31`.
 - Current production browser-wallet lifecycle: OKX-signed root creation,
   narrower child proposal, semantic review (`ALL_CLAUSES_NARROWER`), exact-scope
   `ALLOWED` access, child revocation, and post-revocation `GRANT_INACTIVE` were
@@ -149,6 +154,7 @@ npm run studionet:inspect
 npm run studionet:prepare-delegate
 npm run studionet:deploy
 npm run studionet:lifecycle
+npm run studionet:adversarial
 ```
 
 The lifecycle commands are resumable and recover finalized state instead of
@@ -175,10 +181,10 @@ patterns; it does not claim external adoption.
   public network data. Activity returns only allowlisted grant operations for
   the connected wallet and active contract; the UI is not a confidentiality
   boundary.
-- The actor-bound ABI and fail-closed time/validator changes are deployed and
-  lifecycle-proven on Studionet. The clause-pair ambiguity lock described above
-  is verified locally and requires a new contract deployment before it can be
-  claimed for the active address listed above.
+- The actor-bound ABI, fail-closed time/validator behavior, and clause-pair
+  ambiguity lock are deployed at the active address above. The active source was
+  read back from Studionet and exactly matches the local and deployment-record
+  SHA-256; a three-case live adversarial corpus finalized non-authorizing.
 - The validator judges authored policy meaning, not external real-world truth;
   ambiguity intentionally remains inactive and terminal for an unchanged
   semantic parent/child clause pair, while only technical unverifiability is

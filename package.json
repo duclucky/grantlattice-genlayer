@@ -22,7 +22,8 @@
     "studionet:prepare-delegate": "node scripts/studionet.mjs prepare-delegate",
     "studionet:recover-delegate": "node scripts/studionet.mjs recover-delegate-funding",
     "studionet:deploy": "node scripts/studionet.mjs deploy",
-    "studionet:lifecycle": "node scripts/studionet.mjs lifecycle"
+    "studionet:lifecycle": "node scripts/studionet.mjs lifecycle",
+    "studionet:adversarial": "node scripts/studionet.mjs adversarial"
   },
   "dependencies": {
     "genlayer-js": "1.1.8"

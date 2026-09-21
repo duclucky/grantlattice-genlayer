@@ -1,8 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 
 import {
   accessCheckArgs,
+  adversarialCorpus,
+  assessAdversarialEvidence,
   delegateFundingDecision,
   deploymentDecision,
   isExpectedRejectedReceipt,
@@ -11,6 +14,50 @@ import {
   safeReceiptProjection,
   selectNextLifecycleAction,
 } from "../../scripts/studionet.mjs";
+
+
+test("live adversarial corpus is unsafe by meaning and cannot choose its verdict", () => {
+  const corpus = adversarialCorpus();
+  assert.equal(corpus.length, 3);
+  assert.equal(new Set(corpus.map((item) => item.id)).size, 3);
+  for (const item of corpus) {
+    assert.match(item.childText, /NARROWER_OR_EQUAL/u);
+    assert.match(item.childText, /any purpose|unrestricted|disclose/u);
+  }
+});
+
+
+test("live adversarial evidence passes only with finalized non-authorizing verdicts", () => {
+  const safeCase = (id, verdict = "EXPANSION", status = "DENIED") => ({
+    id,
+    verdict,
+    status,
+    effective: false,
+    propose: { receipt: { status: "FINALIZED", txExecutionResult: "SUCCESS" }, explorer: "https://explorer/tx/propose" },
+    review: { receipt: { status: "FINALIZED", txExecutionResult: "SUCCESS" }, explorer: "https://explorer/tx/review" },
+  });
+  const evidence = { cases: [safeCase("a"), safeCase("b", "AMBIGUOUS", "AMBIGUOUS"), safeCase("c")] };
+  assert.deepEqual(assessAdversarialEvidence(evidence), { passed: true, finalized: 3, nonAuthorizing: 3 });
+  evidence.cases[2] = safeCase("c", "ATTENUATED", "ACTIVE");
+  assert.deepEqual(assessAdversarialEvidence(evidence), { passed: false, finalized: 3, nonAuthorizing: 2 });
+});
+
+
+test("committed active-address evidence has exact provenance and three live denials", () => {
+  const evidence = JSON.parse(readFileSync(
+    new URL("../../docs/evidence/studionet/adversarial-evaluator.json", import.meta.url),
+    "utf8",
+  ));
+  assert.equal(evidence.contractAddress, "0xC9A8F8640e80591BE0d0F67d411BbBE3e60213fE");
+  assert.equal(evidence.provenance.exactSourceMatch, true);
+  assert.equal(evidence.provenance.ambiguityLockMarkersPresent, true);
+  assert.deepEqual(assessAdversarialEvidence(evidence), { passed: true, finalized: 3, nonAuthorizing: 3 });
+  assert.deepEqual(evidence.cases.map((item) => [item.status, item.verdict, item.effective]), [
+    ["DENIED", "EXPANSION", false],
+    ["DENIED", "EXPANSION", false],
+    ["DENIED", "EXPANSION", false],
+  ]);
+});
 
 
 test("access checks bind the protected action to the recorded child grantee", () => {
@@ -116,6 +163,10 @@ test("deployment identity resumes only the exact successful active revision", ()
   assert.equal(
     deploymentDecision({ ...current, sourceSha256: "changed", result: "SUCCESS", active: true, contractAddress: "0xcontract" }, current),
     "REFUSE",
+  );
+  assert.equal(
+    deploymentDecision({ ...current, sourceCommit: "historical-commit", result: "SUCCESS", active: true, contractAddress: "0xcontract" }, current),
+    "RESUME",
   );
 });
 

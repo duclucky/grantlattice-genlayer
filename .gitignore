@@ -4,6 +4,7 @@
 .venv/
 node_modules/
 dist/
+frontend/dist-verify/
 coverage/
 .pytest_cache/
 __pycache__/

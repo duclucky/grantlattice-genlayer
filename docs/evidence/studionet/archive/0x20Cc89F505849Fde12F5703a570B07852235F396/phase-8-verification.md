@@ -1,9 +1,4 @@
-# Semantic ambiguity lock Studionet verification (historical revision)
-
-> This record belongs to archived contract
-> `0x20Cc89F505849Fde12F5703a570B07852235F396`, not the active submission.
-> The active ambiguity-lock deployment and live evaluator evidence are in
-> [`ambiguity-lock-remediation.md`](./ambiguity-lock-remediation.md).
+# Semantic ambiguity lock Studionet verification
 
 Status: **PASS ON STUDIONET**
 
